@@ -1,72 +1,40 @@
-import { authApi } from '../api/auth.api.js';
-
-const AUTH_KEY = 'social_media_auth';
-
-let currentUser = null;
-let listeners = [];
-
-function notifyListeners() {
-  listeners.forEach(fn => fn(currentUser));
-}
+const API_BASE_URL =
+  'http://localhost:3000/api/v1';
 
 export const auth = {
-  get user() {
-    return currentUser;
-  },
-
-  get isAuthenticated() {
-    return !!currentUser;
-  },
-
-  setUser(user) {
-    currentUser = user;
-    notifyListeners();
-  },
-
-  clearUser() {
-    currentUser = null;
-    notifyListeners();
-  },
-
-  subscribe(fn) {
-    listeners.push(fn);
-    return () => {
-      listeners = listeners.filter(l => l !== fn);
-    };
-  },
-
-  async init() {
-    try {
-      const response = await authApi.me();
-      if (response.success && response.data) {
-        this.setUser(response.data);
-        return true;
-      }
-    } catch {
-      // Not authenticated
-    }
-    this.clearUser();
-    return false;
-  },
 
   async login(credentials) {
-    const response = await authApi.login(credentials);
-    if (response.success && response.data) {
-      this.setUser(response.data.user);
-    }
-    return response;
-  },
+    const response = await fetch(
+      `${API_BASE_URL}/auth/login`,
+      {
+        method: 'POST',
 
-  async register(data) {
-    const response = await authApi.register(data);
-    if (response.success && response.data) {
-      this.setUser(response.data.user);
-    }
-    return response;
-  },
+        headers: {
+          'Content-Type': 'application/json'
+        },
 
-  async logout() {
-    await authApi.logout();
-    this.clearUser();
-  },
+        credentials: 'include',
+
+        body: JSON.stringify(credentials)
+      }
+    );
+
+    const data =
+      await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || {
+          message: 'Login failed'
+        }
+      };
+    }
+
+    return {
+      success: true,
+      data
+    };
+  }
+
 };
