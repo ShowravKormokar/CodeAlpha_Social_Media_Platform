@@ -1,13 +1,60 @@
 import { Router } from 'express';
+import { z } from 'zod';
+import { validateParams, validateQuery } from '../../middlewares/validation.middleware.js';
+import { authMiddleware, optionalAuthMiddleware } from '../../middlewares/auth.middleware.js';
+import { followService } from './follow.service.js';
+import { successResponse, paginatedResponse } from '../../common/response/index.js';
+import { getPaginationParams } from '../../common/pagination/index.js';
 
 const router = Router();
 
-router.post('/:id', (req, res) => {
-  res.json({ success: true, message: 'Follow user endpoint - to be implemented' });
+const userIdSchema = z.object({
+  id: z.string().uuid(),
 });
 
-router.delete('/:id', (req, res) => {
-  res.json({ success: true, message: 'Unfollow user endpoint - to be implemented' });
+const paginationSchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+router.post('/users/:id/follow', authMiddleware, validateParams(userIdSchema), async (req, res, next) => {
+  try {
+    await followService.follow(req.user.id, req.validatedParams.id);
+    res.json(successResponse(null, 'Successfully followed user'));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/users/:id/follow', authMiddleware, validateParams(userIdSchema), async (req, res, next) => {
+  try {
+    await followService.unfollow(req.user.id, req.validatedParams.id);
+    res.json(successResponse(null, 'Successfully unfollowed user'));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/users/:id/followers', optionalAuthMiddleware, validateParams(userIdSchema), validateQuery(paginationSchema), async (req, res, next) => {
+  try {
+    const currentUserId = req.user?.id;
+    const pagination = getPaginationParams(req.query);
+    const result = await followService.getFollowers(req.validatedParams.id, pagination, currentUserId);
+    res.json(paginatedResponse(result.data, result.pagination));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/users/:id/following', optionalAuthMiddleware, validateParams(userIdSchema), validateQuery(paginationSchema), async (req, res, next) => {
+  try {
+    const currentUserId = req.user?.id;
+    const pagination = getPaginationParams(req.query);
+    const result = await followService.getFollowing(req.validatedParams.id, pagination, currentUserId);
+    res.json(paginatedResponse(result.data, result.pagination));
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;
