@@ -1,27 +1,156 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Feed - Social Media Platform</title>
+
+  <meta name="description" content="Your SocialApp home feed.">
+
+  <meta name="theme-color" content="#222831">
+
+  <title>Home — SocialApp</title>
+
+  <!-- Remix Icon -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.9.1/fonts/remixicon.css">
+
+  <!-- Core -->
   <link rel="stylesheet" href="css/reset.css">
   <link rel="stylesheet" href="css/variables.css">
   <link rel="stylesheet" href="css/global.css">
   <link rel="stylesheet" href="css/components.css">
+
+  <!-- Home / Feed -->
+  <link rel="stylesheet" href="css/pages/home.css">
   <link rel="stylesheet" href="css/pages/feed.css">
 </head>
-<body>
+
+<body class="home-page">
+
   <div id="app">
+
+    <!-- =====================================================
+         BOTTOM NAVIGATION
+         ===================================================== -->
     <header class="navbar" id="navbar"></header>
-    <div class="layout">
-      <aside class="sidebar-left" id="sidebar-left"></aside>
-      <main class="main-content" id="main-content">
-        <div class="create-post" id="create-post"></div>
-        <div class="posts-feed" id="posts-feed"></div>
+
+
+    <!-- =====================================================
+         HOME LAYOUT
+         ===================================================== -->
+    <div class="home-layout">
+
+      <!-- ===================================================
+           LEFT SIDEBAR
+           =================================================== -->
+      <aside class="home-sidebar home-sidebar-left" id="sidebar-left" aria-label="Sidebar navigation"></aside>
+
+
+      <!-- ===================================================
+           MAIN FEED
+           =================================================== -->
+      <main class="home-main" id="main-content">
+
+        <!-- Feed toolbar -->
+        <section class="feed-toolbar">
+
+          <div class="feed-toolbar-heading">
+            <div>
+              <span class="feed-eyebrow">
+                <span class="feed-live-dot"></span>
+                Your feed
+              </span>
+
+              <h1>Home</h1>
+
+              <p>
+                Stay connected with what matters to you.
+              </p>
+            </div>
+          </div>
+
+
+          <div class="feed-toolbar-actions">
+
+            <!-- Search -->
+            <div class="feed-search">
+
+              <i class="ri-search-line" aria-hidden="true"></i>
+
+              <input type="search" id="feed-search" placeholder="Search loaded posts..."
+                aria-label="Search loaded posts" autocomplete="off">
+
+              <button type="button" class="feed-search-clear" id="feed-search-clear" aria-label="Clear search" hidden>
+                <i class="ri-close-line" aria-hidden="true"></i>
+              </button>
+
+            </div>
+
+
+            <!-- Refresh -->
+            <button type="button" class="feed-refresh-btn" id="feed-refresh-btn" aria-label="Refresh feed"
+              title="Refresh feed">
+              <i class="ri-refresh-line" aria-hidden="true"></i>
+
+              <span>Refresh</span>
+            </button>
+
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             CREATE POST
+             ================================================= -->
+        <section class="create-post-container" id="create-post" aria-label="Create a post"></section>
+
+
+        <!-- =================================================
+             POSTS
+             ================================================= -->
+        <section class="posts-section" aria-label="Posts">
+
+          <div class="posts-feed" id="posts-feed"></div>
+
+
+          <!-- Infinite-scroll sentinel.
+               IMPORTANT: keep this outside #posts-feed. -->
+          <div id="feed-sentinel" class="feed-sentinel" aria-hidden="true"></div>
+
+
+          <!-- Loading indicator -->
+          <div id="feed-loading" class="feed-loading" hidden aria-live="polite">
+            <span class="feed-spinner"></span>
+            <span>Loading more posts...</span>
+          </div>
+
+
+          <!-- End of feed -->
+          <div id="feed-end" class="feed-end" hidden>
+            <i class="ri-check-double-line" aria-hidden="true"></i>
+
+            <span>You're all caught up.</span>
+          </div>
+
+        </section>
+
       </main>
-      <aside class="sidebar-right" id="sidebar-right"></aside>
+
+
+      <!-- ===================================================
+           RIGHT SIDEBAR
+           =================================================== -->
+      <aside class="home-sidebar home-sidebar-right" id="sidebar-right" aria-label="Discover"></aside>
+
     </div>
+
   </div>
+
+
   <script type="module" src="js/pages/feed.js"></script>
+
 </body>
+
 </html>
