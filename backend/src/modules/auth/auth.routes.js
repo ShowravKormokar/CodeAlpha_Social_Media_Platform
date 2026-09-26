@@ -1,23 +1,27 @@
 import { Router } from 'express';
-import { body } from 'zod';
+import { z } from 'zod';
 import { validateBody } from '../../middlewares/validation.middleware.js';
 import { authRateLimiter } from '../../middlewares/rate-limit.middleware.js';
 
 const router = Router();
 
-router.post('/register', authRateLimiter, validateBody(body.object({
-  name: body.string().min(1).max(100),
-  username: body.string().min(3).max(30).regex(/^[a-zA-Z0-9_]+$/),
-  email: body.string().email(),
-  password: body.string().min(8).max(100),
-})), (req, res) => {
+const registerSchema = z.object({
+  name: z.string().min(1).max(100),
+  username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_]+$/),
+  email: z.string().email(),
+  password: z.string().min(8).max(100),
+});
+
+const loginSchema = z.object({
+  emailOrUsername: z.string().min(1),
+  password: z.string().min(1),
+});
+
+router.post('/register', authRateLimiter, validateBody(registerSchema), (req, res) => {
   res.status(201).json({ success: true, message: 'Registration endpoint - to be implemented' });
 });
 
-router.post('/login', authRateLimiter, validateBody(body.object({
-  emailOrUsername: body.string().min(1),
-  password: body.string().min(1),
-})), (req, res) => {
+router.post('/login', authRateLimiter, validateBody(loginSchema), (req, res) => {
   res.json({ success: true, message: 'Login endpoint - to be implemented' });
 });
 
