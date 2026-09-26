@@ -1,0 +1,36 @@
+.feed-page {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+}
+
+.feed-header {
+  margin-bottom: var(--spacing-lg);
+}
+
+.feed-header h1 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.posts-feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.posts-feed.loading .post-card {
+  pointer-events: none;
+}
+
+.load-more {
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-lg);
+}
+
+.no-posts {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-text-tertiary);
+}

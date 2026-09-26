@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Social Media Platform</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages/auth.css">
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1>Welcome Back</h1>
+        <p>Sign in to your account</p>
+      </div>
+      <form id="login-form" class="auth-form">
+        <div class="form-group">
+          <label for="emailOrUsername">Email or Username</label>
+          <input type="text" id="emailOrUsername" name="emailOrUsername" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+      </form>
+      <div class="auth-footer">
+        <p>Don't have an account? <a href="register.html">Sign up</a></p>
+      </div>
+      <div id="auth-error" class="auth-error" hidden></div>
+    </div>
+  </div>
+  <script type="module" src="js/pages/login.js"></script>
+</body>
+</html>

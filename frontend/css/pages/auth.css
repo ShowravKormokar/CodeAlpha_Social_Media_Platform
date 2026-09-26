@@ -1,0 +1,46 @@
+.auth-page {
+  min-height: 100vh;
+}
+
+.auth-card {
+  animation: fadeInUp 0.4s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-form .form-group:last-of-type {
+  margin-bottom: var(--spacing-lg);
+}
+
+.password-requirements {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.password-requirements ul {
+  list-style: disc;
+  padding-left: var(--spacing-lg);
+  margin-top: var(--spacing-xs);
+}
+
+.password-requirements li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.password-requirements li.valid {
+  color: var(--color-success);
+}
+
+.password-requirements li.invalid {
+  color: var(--color-text-tertiary);
+}
