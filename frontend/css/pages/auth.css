@@ -200,6 +200,12 @@
   width: min(100%, 570px);
 }
 
+.auth-card-verify,
+.auth-card-forgot,
+.auth-card-reset {
+  width: min(100%, 460px);
+}
+
 
 /* =========================================================
    BRAND
@@ -754,9 +760,6 @@
 
 /* =========================================================
    FOOTER
-
-   Explicitly scoped so application footer/layout styles
-   cannot move it beside the card.
    ========================================================= */
 
 .auth-card>.auth-footer {
@@ -804,6 +807,132 @@
 }
 
 .auth-card>.auth-footer a:hover {
+  color: #a5a6ff;
+  text-decoration: underline;
+}
+
+/* =========================================================
+   RESEND SECTION
+   ========================================================= */
+
+.auth-resend {
+  margin-top: 1rem;
+
+  text-align: center;
+
+  color: var(--color-text-secondary);
+
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.auth-resend-link {
+  margin-left: 0.3rem;
+
+  color: #8f91ff;
+
+  font-weight: 700;
+
+  background: none;
+  border: 0;
+  padding: 0;
+
+  cursor: pointer;
+}
+
+.auth-resend-link:hover {
+  color: #a5a6ff;
+  text-decoration: underline;
+}
+
+.auth-resend-link:disabled {
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+}
+
+.auth-resend-message {
+  margin-top: 0.5rem;
+
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.auth-resend-message.is-success {
+  color: #69db9c;
+}
+
+.auth-resend-message.is-error {
+  color: #f08a99;
+}
+
+/* =========================================================
+   SUCCESS MESSAGE
+   ========================================================= */
+
+.auth-success {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  margin-top: 0.85rem;
+  padding: 0.65rem 0.75rem;
+
+  border:
+    1px solid rgba(32, 167, 121, 0.20);
+
+  border-radius: 11px;
+
+  background:
+    rgba(32, 167, 121, 0.07);
+
+  color: #69db9c;
+
+  font-size: 0.72rem;
+  font-weight: 500;
+
+  line-height: 1.4;
+
+  box-shadow:
+    inset 3px 3px 7px rgba(0, 0, 0, 0.08);
+
+  animation:
+    auth-success-enter 180ms ease;
+}
+
+.auth-success[hidden] {
+  display: none !important;
+}
+
+@keyframes auth-success-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================================================
+   FORGOT PASSWORD LINK
+   ========================================================= */
+
+.auth-forgot {
+  margin-top: 0.5rem;
+
+  text-align: right;
+}
+
+.auth-forgot a {
+  color: #8f91ff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-forgot a:hover {
   color: #a5a6ff;
   text-decoration: underline;
 }
