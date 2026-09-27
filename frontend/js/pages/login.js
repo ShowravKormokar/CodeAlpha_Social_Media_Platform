@@ -90,11 +90,8 @@ function setupInputListeners() {
 }
 
 function validateForm() {
-  const emailOrUsername =
-    emailOrUsernameInput.value.trim();
-
-  const password =
-    passwordInput.value;
+  const emailOrUsername = emailOrUsernameInput.value.trim();
+  const password = passwordInput.value;
 
   setFieldState(emailOrUsernameInput, null);
   setFieldState(passwordInput, null);
@@ -132,11 +129,8 @@ async function handleSubmit(event) {
     return;
   }
 
-  const emailOrUsername =
-    emailOrUsernameInput.value.trim();
-
-  const password =
-    passwordInput.value;
+  const emailOrUsername = emailOrUsernameInput.value.trim();
+  const password = passwordInput.value;
 
   setLoading(true);
 
@@ -152,8 +146,14 @@ async function handleSubmit(event) {
         'success'
       );
 
-      window.location.href = '/feed.html';
+      window.location.href = '/frontend/feed.html';
+      return;
+    }
 
+    // Check if email not verified
+    if (response.error?.code === 'EMAIL_NOT_VERIFIED') {
+      showError(response.error.message);
+      window.location.href = '/frontend/verify-email.html';
       return;
     }
 

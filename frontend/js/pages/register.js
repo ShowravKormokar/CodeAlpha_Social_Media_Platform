@@ -15,8 +15,7 @@ const nameInput = document.getElementById('name');
 const usernameInput = document.getElementById('username');
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
-const confirmPasswordInput =
-  document.getElementById('confirmPassword');
+const confirmPasswordInput = document.getElementById('confirmPassword');
 
 const submitButton = form.querySelector('.auth-submit');
 
@@ -62,32 +61,26 @@ function setupPasswordToggles() {
   );
 
   toggles.forEach((toggle) => {
-    const inputId =
-      toggle.dataset.passwordToggle;
-
-    const input =
-      document.getElementById(inputId);
+    const inputId = toggle.dataset.passwordToggle;
+    const input = document.getElementById(inputId);
 
     if (!input) {
       return;
     }
 
     toggle.addEventListener('click', () => {
-      const showing =
-        input.type === 'text';
+      const showing = input.type === 'text';
 
-      input.type =
-        showing ? 'password' : 'text';
+      input.type = showing ? 'password' : 'text';
 
       toggle.setAttribute(
         'aria-pressed',
         String(!showing)
       );
 
-      const passwordName =
-        inputId === 'password'
-          ? 'password'
-          : 'confirmation password';
+      const passwordName = inputId === 'password'
+        ? 'password'
+        : 'confirmation password';
 
       toggle.setAttribute(
         'aria-label',
@@ -96,8 +89,7 @@ function setupPasswordToggles() {
           : `Hide ${passwordName}`
       );
 
-      const icon =
-        toggle.querySelector('i');
+      const icon = toggle.querySelector('i');
 
       if (icon) {
         icon.className = showing
@@ -130,20 +122,11 @@ function setupInputListeners() {
 }
 
 function validateForm() {
-  const name =
-    nameInput.value.trim();
-
-  const username =
-    usernameInput.value.trim();
-
-  const email =
-    emailInput.value.trim();
-
-  const password =
-    passwordInput.value;
-
-  const confirmPassword =
-    confirmPasswordInput.value;
+  const name = nameInput.value.trim();
+  const username = usernameInput.value.trim();
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+  const confirmPassword = confirmPasswordInput.value;
 
   [
     nameInput,
@@ -164,13 +147,10 @@ function validateForm() {
   setFieldState(nameInput, 'valid');
 
   if (!validateUsername(username)) {
-    setFieldState(
-      usernameInput,
-      'invalid'
-    );
+    setFieldState(usernameInput, 'invalid');
 
     return (
-      'Username must be 3–30 characters ' +
+      'Username must be 3\u201330 characters ' +
       'and contain only letters, numbers, ' +
       'and underscores.'
     );
@@ -194,22 +174,13 @@ function validateForm() {
 
   setFieldState(passwordInput, 'valid');
 
-  if (!validateMatch(
-    password,
-    confirmPassword
-  )) {
-    setFieldState(
-      confirmPasswordInput,
-      'invalid'
-    );
+  if (!validateMatch(password, confirmPassword)) {
+    setFieldState(confirmPasswordInput, 'invalid');
 
     return 'Passwords do not match.';
   }
 
-  setFieldState(
-    confirmPasswordInput,
-    'valid'
-  );
+  setFieldState(confirmPasswordInput, 'valid');
 
   return null;
 }
@@ -223,25 +194,17 @@ async function handleSubmit(event) {
 
   hideError();
 
-  const validationError =
-    validateForm();
+  const validationError = validateForm();
 
   if (validationError) {
     showError(validationError);
     return;
   }
 
-  const name =
-    nameInput.value.trim();
-
-  const username =
-    usernameInput.value.trim();
-
-  const email =
-    emailInput.value.trim();
-
-  const password =
-    passwordInput.value;
+  const name = nameInput.value.trim();
+  const username = usernameInput.value.trim();
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
 
   setLoading(true);
 
@@ -254,13 +217,22 @@ async function handleSubmit(event) {
     });
 
     if (response.success) {
+      const emailVerificationToken = response.data?.emailVerificationToken;
+      const emailVerificationExpires = response.data?.emailVerificationExpires;
+      
+      if (emailVerificationToken) {
+        // Store token for verify-email page
+        sessionStorage.setItem('emailVerificationToken', emailVerificationToken);
+        sessionStorage.setItem('emailVerificationExpires', emailVerificationExpires);
+        sessionStorage.setItem('verifyEmail', email);
+      }
+
       showToast(
-        'Account created successfully!',
+        'Account created successfully! Please verify your email.',
         'success'
       );
 
-      window.location.href =
-        '/feed.html';
+      window.location.href = '/frontend/verify-email.html';
 
       return;
     }
