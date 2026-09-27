@@ -24,7 +24,19 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-app.use(pinoHttp({ logger: httpLogger }));
+app.use(pinoHttp({
+  logger: httpLogger,
+  serializers: {
+    req: (req) => ({ id: req.id, method: req.method, url: req.url }),
+    res: (res) => ({ statusCode: res.statusCode }),
+  },
+  customLogLevel: (req, res) => {
+    if (res.statusCode === 401) return 'silent';
+    if (res.statusCode >= 500) return 'error';
+    if (res.statusCode >= 400) return 'warn';
+    return 'info';
+  },
+}));
 
 app.use(rateLimiter);
 

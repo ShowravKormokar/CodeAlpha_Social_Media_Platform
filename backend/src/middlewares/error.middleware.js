@@ -23,7 +23,13 @@ export function errorHandler(err, req, res, next) {
   }
 
   if (err instanceof AppError) {
-    logger.warn({ err, requestId }, 'Operational error');
+    if (err.statusCode !== 401) {
+      logger.warn({
+        requestId,
+        code: err.code,
+        statusCode: err.statusCode,
+      }, 'Request rejected');
+    }
     return res.status(err.statusCode).json({
       success: false,
       error: {
