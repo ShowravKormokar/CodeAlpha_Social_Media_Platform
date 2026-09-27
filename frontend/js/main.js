@@ -13,21 +13,23 @@ import {
 
 const publicPages = [
   'login.html',
-  'register.html'
+  'register.html',
+  'verify-email.html',
+  'forgot-password.html',
+  'reset-password.html'
 ];
 
 
-const currentPage =
-  window.location.pathname
-    .split('/')
-    .pop() ||
-  'index.html';
+const pathParts = window.location.pathname.split('/').filter(Boolean);
+const currentPage = pathParts[pathParts.length - 1] || 'index.html';
 
+const isPublicPage = publicPages.includes(currentPage);
 
-const isPublicPage =
-  publicPages.includes(
-    currentPage
-  );
+window.addEventListener('auth:expired', () => {
+  if (!isPublicPage && currentPage !== 'index.html') {
+    window.location.href = '/frontend/login.html';
+  }
+});
 
 
 /* =========================================================
@@ -62,7 +64,7 @@ async function initApp() {
   ) {
 
     window.location.href =
-      '/login.html';
+      '/frontend/login.html';
 
     return;
   }
@@ -76,12 +78,15 @@ async function initApp() {
     authenticated &&
     (
       currentPage === 'login.html' ||
-      currentPage === 'register.html'
+      currentPage === 'register.html' ||
+      currentPage === 'verify-email.html' ||
+      currentPage === 'forgot-password.html' ||
+      currentPage === 'reset-password.html'
     )
   ) {
 
     window.location.href =
-      '/feed.html';
+      '/frontend/feed.html';
 
     return;
   }
@@ -101,7 +106,7 @@ async function initApp() {
         await auth.logout();
 
         window.location.href =
-          '/login.html';
+          '/frontend/login.html';
       }
     }
   );
@@ -135,7 +140,7 @@ async function initApp() {
             await auth.logout();
 
             window.location.href =
-              '/login.html';
+              '/frontend/login.html';
           }
         }
       );
