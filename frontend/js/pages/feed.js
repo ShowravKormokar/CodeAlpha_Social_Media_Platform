@@ -1333,7 +1333,7 @@ async function initFeed() {
   if (!authenticated) {
 
     window.location.href =
-      '/login.html';
+      '/frontend/login.html';
 
     return;
   }
