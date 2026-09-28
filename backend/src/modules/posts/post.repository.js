@@ -3,17 +3,23 @@ import { NotFoundError } from '../../errors/AppError.js';
 
 export class PostRepository {
   async findById(id, currentUserId = null) {
+    let userLikedSubquery = 'FALSE';
+    const params = [id];
+    if (currentUserId) {
+      userLikedSubquery = `(SELECT 1 FROM post_likes WHERE post_id = p.id AND user_id = $2)`;
+      params.push(currentUserId);
+    }
     const query = `
       SELECT p.*, u.username, pr.display_name, pr.avatar_url,
              (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes_count,
              (SELECT COUNT(*) FROM comments WHERE post_id = p.id AND deleted_at IS NULL) as comments_count,
-             ${currentUserId ? `(SELECT 1 FROM post_likes WHERE post_id = p.id AND user_id = '${currentUserId}')` : 'FALSE'} as user_liked
+             ${userLikedSubquery} as user_liked
       FROM posts p
       JOIN users u ON u.id = p.user_id
       JOIN profiles pr ON pr.user_id = u.id
       WHERE p.id = $1 AND p.deleted_at IS NULL AND u.deleted_at IS NULL AND u.status = 'active'
     `;
-    const result = await pool.query(query, [id]);
+    const result = await pool.query(query, params);
     return result.rows[0] || null;
   }
 
@@ -65,19 +71,29 @@ export class PostRepository {
   async list({ page = 1, limit = 20, userId = null }, currentUserId = null) {
     const offset = (page - 1) * limit;
     let whereClause = 'p.deleted_at IS NULL AND u.deleted_at IS NULL AND u.status = \'active\'';
+    let countWhereClause = whereClause;
     const params = [limit, offset];
+    const countParams = [];
     let paramIndex = 3;
 
     if (userId) {
       whereClause += ` AND p.user_id = $${paramIndex++}`;
       params.push(userId);
+      countWhereClause += ' AND p.user_id = $1';
+      countParams.push(userId);
+    }
+
+    let userLikedSubquery = 'FALSE';
+    if (currentUserId) {
+      userLikedSubquery = `(SELECT 1 FROM post_likes WHERE post_id = p.id AND user_id = $${paramIndex++})`;
+      params.push(currentUserId);
     }
 
     const query = `
       SELECT p.*, u.username, pr.display_name, pr.avatar_url,
              (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes_count,
              (SELECT COUNT(*) FROM comments WHERE post_id = p.id AND deleted_at IS NULL) as comments_count,
-             ${currentUserId ? `(SELECT 1 FROM post_likes WHERE post_id = p.id AND user_id = '${currentUserId}')` : 'FALSE'} as user_liked
+             ${userLikedSubquery} as user_liked
       FROM posts p
       JOIN users u ON u.id = p.user_id
       JOIN profiles pr ON pr.user_id = u.id
@@ -89,12 +105,12 @@ export class PostRepository {
     const countQuery = `
       SELECT COUNT(*) FROM posts p
       JOIN users u ON u.id = p.user_id
-      WHERE ${whereClause}
+      WHERE ${countWhereClause}
     `;
 
     const [dataResult, countResult] = await Promise.all([
       pool.query(query, params),
-      pool.query(countQuery, params.slice(2))
+      pool.query(countQuery, countParams)
     ]);
 
     return {
