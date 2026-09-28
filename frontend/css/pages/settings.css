@@ -1,0 +1,102 @@
+.settings-page {
+  width: min(100%, 720px);
+  margin: 0 auto;
+}
+
+.settings-container {
+  width: 100%;
+}
+
+.settings-section {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-raised);
+  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
+}
+
+.settings-section-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.settings-form .form-group {
+  margin-bottom: var(--spacing-lg);
+}
+
+.settings-form .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.settings-form .form-label {
+  font-size: var(--font-size-sm);
+}
+
+.settings-form .form-input,
+.settings-form .form-textarea {
+  width: 100%;
+}
+
+.settings-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.settings-actions .btn {
+  flex: 1;
+}
+
+.avatar-preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--color-border-light);
+  box-shadow: var(--shadow-raised-sm);
+}
+
+.cover-preview {
+  width: 100%;
+  max-width: 400px;
+  height: 150px;
+  border-radius: var(--border-radius-md);
+  object-fit: cover;
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-raised-sm);
+}
+
+.profile-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-xl);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+@media (max-width: 767px) {
+  .settings-page {
+    width: 100%;
+  }
+
+  .settings-section {
+    padding: var(--spacing-md);
+  }
+
+  .settings-actions {
+    flex-direction: column;
+  }
+
+  .settings-actions .btn {
+    width: 100%;
+  }
+}
