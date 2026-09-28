@@ -5,6 +5,7 @@ import {
 import {
   auth
 } from './state/auth.js';
+import { appUrl } from './utils/routes.js';
 
 
 /* =========================================================
@@ -27,7 +28,7 @@ const isPublicPage = publicPages.includes(currentPage);
 
 window.addEventListener('auth:expired', () => {
   if (!isPublicPage && currentPage !== 'index.html') {
-    window.location.href = '/frontend/login.html';
+    window.location.href = appUrl('login.html');
   }
 });
 
@@ -63,8 +64,7 @@ async function initApp() {
     currentPage !== 'index.html'
   ) {
 
-    window.location.href =
-      '/frontend/login.html';
+    window.location.href = appUrl('login.html');
 
     return;
   }
@@ -85,8 +85,7 @@ async function initApp() {
     )
   ) {
 
-    window.location.href =
-      '/frontend/feed.html';
+    window.location.href = appUrl('feed.html');
 
     return;
   }
@@ -105,8 +104,7 @@ async function initApp() {
 
         await auth.logout();
 
-        window.location.href =
-          '/frontend/login.html';
+        window.location.href = appUrl('login.html');
       }
     }
   );
@@ -139,8 +137,7 @@ async function initApp() {
 
             await auth.logout();
 
-            window.location.href =
-              '/frontend/login.html';
+            window.location.href = appUrl('login.html');
           }
         }
       );

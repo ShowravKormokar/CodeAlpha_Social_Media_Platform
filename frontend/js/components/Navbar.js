@@ -1,10 +1,12 @@
 import { createElement } from '../utils/dom.js';
+import { appUrl } from '../utils/routes.js';
 
 
 export function Navbar({
   currentUser,
   onLogout
 }) {
+  const currentPage = window.location.pathname.split('/').filter(Boolean).pop() || 'index.html';
 
   const nav = createElement(
     'nav',
@@ -24,7 +26,7 @@ export function Navbar({
     'a',
     {
       class: 'navbar-brand',
-      href: '/feed.html',
+      href: appUrl('feed.html'),
       'aria-label': 'SocialApp home'
     }
   );
@@ -50,51 +52,28 @@ export function Navbar({
   );
 
 
-  const homeLink = createElement(
-    'a',
-    {
-      class: 'nav-link',
-      href: '/feed.html',
-      title: 'Home',
-      'aria-label': 'Home',
-      'aria-current': 'page'
-    }
-  );
+  const navigationItems = [
+    { label: 'Home', icon: 'ri-home-5-line', page: 'feed.html', href: appUrl('feed.html') },
+    { label: 'Search', icon: 'ri-search-line', page: 'search.html', href: appUrl('search.html') },
+    { label: 'Create', icon: 'ri-add-circle-line', page: null, href: `${appUrl('feed.html')}#create-post`, prominent: true },
+  ];
 
-  homeLink.innerHTML = `
-    <i
-      class="ri-home-5-line"
-      aria-hidden="true"
-    ></i>
+  navigationItems.forEach(({ label, icon, page, href, prominent }) => {
+    const link = createElement('a', {
+      class: `nav-link${prominent ? ' nav-link-create' : ''}`,
+      href,
+      title: label,
+      'aria-label': label,
+      ...(page === currentPage ? { 'aria-current': 'page' } : {})
+    });
 
-    <span>Home</span>
-  `;
+    link.innerHTML = `
+      <i class="${icon}" aria-hidden="true"></i>
+      <span>${label}</span>
+    `;
 
-
-  const notificationsLink = createElement(
-    'a',
-    {
-      class: 'nav-link',
-      href: '/notifications.html',
-      title: 'Notifications',
-      'aria-label': 'Notifications'
-    }
-  );
-
-  notificationsLink.innerHTML = `
-    <i
-      class="ri-notification-3-line"
-      aria-hidden="true"
-    ></i>
-
-    <span>Notifications</span>
-  `;
-
-
-  navLinks.append(
-    homeLink,
-    notificationsLink
-  );
+    navLinks.append(link);
+  });
 
 
   /* =========================================================
@@ -174,20 +153,16 @@ export function Navbar({
 
     dropdown.innerHTML = `
       <a
-        href="/profile.html"
+        href="${appUrl('profile.html')}"
         class="user-menu-item"
         role="menuitem"
       >
-        <i
-          class="ri-user-3-line"
-          aria-hidden="true"
-        ></i>
-
+        <i class="ri-user-3-line" aria-hidden="true"></i>
         <span>Profile</span>
       </a>
 
       <a
-        href="/settings.html"
+        href="${appUrl('settings.html')}"
         class="user-menu-item"
         role="menuitem"
       >
@@ -247,6 +222,14 @@ export function Navbar({
         );
       }
     );
+
+    menuContainer.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        menuContainer.classList.remove('open');
+        userTrigger.setAttribute('aria-expanded', 'false');
+        userTrigger.focus();
+      }
+    });
 
 
     /* =======================================================
@@ -318,7 +301,7 @@ export function Navbar({
       'a',
       {
         class: 'btn btn-ghost btn-sm',
-        href: '/login.html'
+        href: appUrl('login.html')
       },
       'Sign In'
     );
@@ -328,7 +311,7 @@ export function Navbar({
       'a',
       {
         class: 'btn btn-primary btn-sm',
-        href: '/register.html'
+        href: appUrl('register.html')
       },
       'Sign Up'
     );
@@ -345,11 +328,7 @@ export function Navbar({
      FINAL NAV
      ========================================================= */
 
-  nav.append(
-    brand,
-    navLinks,
-    userMenu
-  );
+  nav.append(brand, navLinks, userMenu);
 
 
   return nav;

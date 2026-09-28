@@ -1,17 +1,18 @@
 import { createElement } from '../utils/dom.js';
 import { getInitials } from '../utils/format.js';
+import { appUrl } from '../utils/routes.js';
 
 export function UserCard({ user, currentUser, onFollow, onUnfollow, isFollowing }) {
   const card = createElement('div', { class: 'card user-card' });
   const isSelf = currentUser && user.id === currentUser.id;
-  
+
   card.innerHTML = `
     <div class="card-body" style="display: flex; align-items: center; gap: var(--spacing-md);">
-      <a href="/profile.html?userId=${user.id}" class="avatar avatar-lg" style="flex-shrink: 0;">
+      <a href="${appUrl(`profile.html?userId=${user.id}`)}" class="avatar avatar-lg" style="flex-shrink: 0;">
         ${user.avatar_url ? `<img src="${user.avatar_url}" alt="">` : getInitials(user.name || user.username)}
       </a>
       <div style="flex: 1; min-width: 0;">
-        <a href="/profile.html?userId=${user.id}" style="text-decoration: none; color: inherit;">
+        <a href="${appUrl(`profile.html?userId=${user.id}`)}" style="text-decoration: none; color: inherit;">
           <div style="font-weight: var(--font-weight-semibold); color: var(--color-text-primary);">
             ${user.name || user.username}
           </div>
@@ -34,7 +35,7 @@ export function UserCard({ user, currentUser, onFollow, onUnfollow, isFollowing 
       </div>
     </div>
   `;
-  
+
   const followBtn = card.querySelector('.follow-btn');
   followBtn?.addEventListener('click', () => {
     const action = followBtn.dataset.action;
@@ -44,6 +45,6 @@ export function UserCard({ user, currentUser, onFollow, onUnfollow, isFollowing 
       onUnfollow?.(user.id);
     }
   });
-  
+
   return card;
 }
