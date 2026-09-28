@@ -3,6 +3,7 @@ import { postsApi } from '../api/posts.api.js';
 import { likesApi } from '../api/likes.api.js';
 import { PostCard } from '../components/PostCard.js';
 import { showToast } from '../main.js';
+import { appUrl } from '../utils/routes.js';
 
 
 /* =========================================================
@@ -17,16 +18,6 @@ const feedContainer =
 const createPostContainer =
   document.getElementById(
     'create-post'
-  );
-
-const sidebarLeft =
-  document.getElementById(
-    'sidebar-left'
-  );
-
-const sidebarRight =
-  document.getElementById(
-    'sidebar-right'
   );
 
 const refreshButton =
@@ -90,270 +81,6 @@ function getInitial(user) {
   return value
     .charAt(0)
     .toUpperCase();
-}
-
-
-/* =========================================================
-   HOME SIDEBARS
-   ========================================================= */
-
-function renderHomeSidebar() {
-
-  const user =
-    auth.user;
-
-
-  if (sidebarLeft) {
-
-    const name =
-      user?.name ||
-      user?.username ||
-      'User';
-
-
-    const username =
-      user?.username
-        ? `@${user.username}`
-        : 'SocialApp member';
-
-
-    sidebarLeft.innerHTML = `
-      <section
-        class="home-profile-card"
-        aria-label="Your profile"
-      >
-
-        <div class="home-profile-top">
-
-          <span class="avatar">
-            ${getInitial(user)}
-          </span>
-
-          <div class="home-profile-info">
-
-            <div class="home-profile-name">
-              ${name}
-            </div>
-
-            <div class="home-profile-username">
-              ${username}
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <a
-          href="/profile.html"
-          class="home-profile-link"
-        >
-          View profile
-        </a>
-
-      </section>
-
-
-      <nav
-        class="home-side-nav"
-        aria-label="Home sections"
-      >
-
-        <a
-          href="/feed.html"
-          class="home-side-link active"
-          aria-current="page"
-        >
-          <i
-            class="ri-home-5-line"
-            aria-hidden="true"
-          ></i>
-
-          <span>Home</span>
-        </a>
-
-
-        <a
-          href="/notifications.html"
-          class="home-side-link"
-        >
-          <i
-            class="ri-notification-3-line"
-            aria-hidden="true"
-          ></i>
-
-          <span>Notifications</span>
-        </a>
-
-
-        <a
-          href="/profile.html"
-          class="home-side-link"
-        >
-          <i
-            class="ri-user-3-line"
-            aria-hidden="true"
-          ></i>
-
-          <span>Profile</span>
-        </a>
-
-
-        <a
-          href="/settings.html"
-          class="home-side-link"
-        >
-          <i
-            class="ri-settings-3-line"
-            aria-hidden="true"
-          ></i>
-
-          <span>Settings</span>
-        </a>
-
-      </nav>
-    `;
-  }
-
-
-  if (sidebarRight) {
-
-    sidebarRight.innerHTML = `
-
-      <section
-        class="home-panel"
-        aria-label="Trending"
-      >
-
-        <div class="home-panel-title">
-
-          <span>Trending</span>
-
-          <i
-            class="ri-fire-line"
-            aria-hidden="true"
-          ></i>
-
-        </div>
-
-
-        <a
-          href="#"
-          class="home-trend"
-        >
-          <div class="home-trend-label">
-            Topic
-          </div>
-
-          <div class="home-trend-name">
-            #WebDevelopment
-          </div>
-        </a>
-
-
-        <a
-          href="#"
-          class="home-trend"
-        >
-          <div class="home-trend-label">
-            Topic
-          </div>
-
-          <div class="home-trend-name">
-            #JavaScript
-          </div>
-        </a>
-
-
-        <a
-          href="#"
-          class="home-trend"
-        >
-          <div class="home-trend-label">
-            Topic
-          </div>
-
-          <div class="home-trend-name">
-            #Technology
-          </div>
-        </a>
-
-
-        <a
-          href="#"
-          class="home-trend"
-        >
-          <div class="home-trend-label">
-            Topic
-          </div>
-
-          <div class="home-trend-name">
-            #Programming
-          </div>
-        </a>
-
-      </section>
-
-
-      <section
-        class="home-panel"
-        aria-label="Quick links"
-      >
-
-        <div class="home-panel-title">
-
-          <span>Quick links</span>
-
-          <i
-            class="ri-links-line"
-            aria-hidden="true"
-          ></i>
-
-        </div>
-
-
-        <a
-          href="/profile.html"
-          class="home-quick-link"
-        >
-          <i
-            class="ri-user-3-line"
-            aria-hidden="true"
-          ></i>
-
-          <span>Your profile</span>
-        </a>
-
-
-        <a
-          href="/notifications.html"
-          class="home-quick-link"
-        >
-          <i
-            class="ri-notification-3-line"
-            aria-hidden="true"
-          ></i>
-
-          <span>Notifications</span>
-        </a>
-
-
-        <a
-          href="/settings.html"
-          class="home-quick-link"
-        >
-          <i
-            class="ri-settings-3-line"
-            aria-hidden="true"
-          ></i>
-
-          <span>Account settings</span>
-        </a>
-
-      </section>
-
-    `;
-  }
 }
 
 
@@ -830,8 +557,7 @@ async function loadPosts(
             onAuthorClick:
               (userId) => {
 
-                window.location.href =
-                  `/profile.html?userId=${userId}`;
+                window.location.href = appUrl(`profile.html?userId=${userId}`);
               }
           });
 
@@ -981,8 +707,7 @@ function handleComment(
   postId
 ) {
 
-  window.location.href =
-    `/post.html?id=${postId}`;
+  window.location.href = appUrl(`post.html?id=${postId}`);
 }
 
 
@@ -1332,14 +1057,10 @@ async function initFeed() {
 
   if (!authenticated) {
 
-    window.location.href =
-      '/frontend/login.html';
+    window.location.href = appUrl('login.html');
 
     return;
   }
-
-
-  renderHomeSidebar();
 
 
   if (createPostContainer) {

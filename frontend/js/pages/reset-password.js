@@ -1,6 +1,7 @@
 import { auth } from '../state/auth.js';
 import { showToast } from '../main.js';
 import { validatePassword, validateRequired, validateMatch } from '../utils/validation.js';
+import { appUrl } from '../utils/routes.js';
 
 const form = document.getElementById('reset-form');
 const errorEl = document.getElementById('auth-error');
@@ -129,7 +130,7 @@ async function handleSubmit(event) {
     if (response.success) {
       showSuccess('Password reset successfully! Redirecting to login...');
       setTimeout(() => {
-        window.location.href = '/frontend/login.html';
+        window.location.href = appUrl('login.html');
       }, 1500);
       return;
     }

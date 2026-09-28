@@ -1,6 +1,7 @@
 import { auth } from '../state/auth.js';
 import { showToast } from '../main.js';
 import { validateRequired } from '../utils/validation.js';
+import { appUrl } from '../utils/routes.js';
 
 const form = document.getElementById('login-form');
 const errorEl = document.getElementById('auth-error');
@@ -146,14 +147,14 @@ async function handleSubmit(event) {
         'success'
       );
 
-      window.location.href = '/frontend/feed.html';
+      window.location.href = appUrl('feed.html');
       return;
     }
 
     // Check if email not verified
     if (response.error?.code === 'EMAIL_NOT_VERIFIED') {
       showError(response.error.message);
-      window.location.href = '/frontend/verify-email.html';
+      window.location.href = appUrl('verify-email.html');
       return;
     }
 

@@ -1,6 +1,7 @@
 import { auth } from '../state/auth.js';
 import { showToast } from '../main.js';
 import { validateRequired } from '../utils/validation.js';
+import { appUrl } from '../utils/routes.js';
 
 const form = document.getElementById('verify-form');
 const errorEl = document.getElementById('auth-error');
@@ -96,10 +97,10 @@ async function handleSubmit(event) {
       sessionStorage.removeItem('emailVerificationToken');
       sessionStorage.removeItem('emailVerificationExpires');
       sessionStorage.removeItem('verifyEmail');
-      
+
       showToast('Email verified successfully! Redirecting to login...', 'success');
       setTimeout(() => {
-        window.location.href = '/frontend/login.html';
+        window.location.href = appUrl('login.html');
       }, 1500);
       return;
     }
@@ -131,7 +132,7 @@ async function handleResend() {
         // Store new token
         sessionStorage.setItem('emailVerificationToken', token);
         sessionStorage.setItem('emailVerificationExpires', response.data?.expiresAt);
-        
+
         // Show token in alert for easy copy-paste (dev/testing)
         alert(`🔐 New Verification Token (copy this):\n\n${token}\n\nPaste into the field above and click "Verify Email"`);
         // Also auto-fill the input

@@ -7,6 +7,7 @@ import {
   validateRequired,
   validateMatch
 } from '../utils/validation.js';
+import { appUrl } from '../utils/routes.js';
 
 const form = document.getElementById('register-form');
 const errorEl = document.getElementById('auth-error');
@@ -219,7 +220,7 @@ async function handleSubmit(event) {
     if (response.success) {
       const emailVerificationToken = response.data?.emailVerificationToken;
       const emailVerificationExpires = response.data?.emailVerificationExpires;
-      
+
       if (emailVerificationToken) {
         // Store token for verify-email page
         sessionStorage.setItem('emailVerificationToken', emailVerificationToken);
@@ -232,7 +233,7 @@ async function handleSubmit(event) {
         'success'
       );
 
-      window.location.href = '/frontend/verify-email.html';
+      window.location.href = appUrl('verify-email.html');
 
       return;
     }
