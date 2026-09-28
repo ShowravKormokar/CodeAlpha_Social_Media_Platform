@@ -17,7 +17,7 @@ const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
-router.post('/users/:id/follow', authMiddleware, validateParams(userIdSchema), async (req, res, next) => {
+router.post('/:id/follow', authMiddleware, validateParams(userIdSchema), async (req, res, next) => {
   try {
     await followService.follow(req.user.id, req.validatedParams.id);
     res.json(successResponse(null, 'Successfully followed user'));
@@ -26,7 +26,7 @@ router.post('/users/:id/follow', authMiddleware, validateParams(userIdSchema), a
   }
 });
 
-router.delete('/users/:id/follow', authMiddleware, validateParams(userIdSchema), async (req, res, next) => {
+router.delete('/:id/follow', authMiddleware, validateParams(userIdSchema), async (req, res, next) => {
   try {
     await followService.unfollow(req.user.id, req.validatedParams.id);
     res.json(successResponse(null, 'Successfully unfollowed user'));
@@ -35,7 +35,7 @@ router.delete('/users/:id/follow', authMiddleware, validateParams(userIdSchema),
   }
 });
 
-router.get('/users/:id/followers', optionalAuthMiddleware, validateParams(userIdSchema), validateQuery(paginationSchema), async (req, res, next) => {
+router.get('/:id/followers', optionalAuthMiddleware, validateParams(userIdSchema), validateQuery(paginationSchema), async (req, res, next) => {
   try {
     const currentUserId = req.user?.id;
     const pagination = getPaginationParams(req.query);
@@ -46,7 +46,7 @@ router.get('/users/:id/followers', optionalAuthMiddleware, validateParams(userId
   }
 });
 
-router.get('/users/:id/following', optionalAuthMiddleware, validateParams(userIdSchema), validateQuery(paginationSchema), async (req, res, next) => {
+router.get('/:id/following', optionalAuthMiddleware, validateParams(userIdSchema), validateQuery(paginationSchema), async (req, res, next) => {
   try {
     const currentUserId = req.user?.id;
     const pagination = getPaginationParams(req.query);
