@@ -135,11 +135,17 @@ p {
 
 .layout {
   display: grid;
-  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--spacing-xl);
 
-  width: min(100% - 2rem, 1280px);
+  width: min(100% - 2rem, 1040px);
   margin-inline: auto;
+  padding-block: 32px 12px;
+}
+
+.layout:has(> .sidebar-right:not(:empty)) {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, var(--sidebar-width));
+  max-width: 1280px;
 }
 
 .main-content {
@@ -185,6 +191,7 @@ p {
   .layout {
     grid-template-columns: 1fr;
     width: min(100% - 1.25rem, 1280px);
+    padding-top: 22px;
   }
 
   .sidebar-left,
