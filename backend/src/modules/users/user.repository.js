@@ -109,6 +109,16 @@ export class UserRepository {
     return result.rows;
   }
 
+  async searchCount(query) {
+    const searchTerm = `%${query.toLowerCase()}%`;
+    const result = await pool.query(
+      `SELECT COUNT(*) FROM users 
+       WHERE (username ILIKE $1 OR email ILIKE $1) AND deleted_at IS NULL`,
+      [searchTerm]
+    );
+    return result.rows[0].count;
+  }
+
   async getStats(userId) {
     const [postsCount, followersCount, followingCount] = await Promise.all([
       pool.query(`SELECT COUNT(*) FROM posts WHERE user_id = $1 AND deleted_at IS NULL`, [userId]),
@@ -129,6 +139,117 @@ export class UserRepository {
       [followerId, followingId]
     );
     return result.rows.length > 0;
+  }
+
+  async findByIds(userIds) {
+    if (!userIds.length) return [];
+    const placeholders = userIds.map((_, i) => `$${i + 1}`).join(',');
+    const result = await pool.query(
+      `SELECT id, username, created_at FROM users WHERE id IN (${placeholders}) AND deleted_at IS NULL`,
+      userIds
+    );
+    return result.rows;
+  }
+
+  async getStatsBatch(userIds) {
+    if (!userIds.length) return {};
+    const placeholders = userIds.map((_, i) => `$${i + 1}`).join(',');
+    
+    const [postsResult, followersResult, followingResult] = await Promise.all([
+      pool.query(
+        `SELECT user_id, COUNT(*) as count FROM posts WHERE user_id IN (${placeholders}) AND deleted_at IS NULL GROUP BY user_id`,
+        userIds
+      ),
+      pool.query(
+        `SELECT following_id as user_id, COUNT(*) as count FROM user_follows WHERE following_id IN (${placeholders}) GROUP BY following_id`,
+        userIds
+      ),
+      pool.query(
+        `SELECT follower_id as user_id, COUNT(*) as count FROM user_follows WHERE follower_id IN (${placeholders}) GROUP BY follower_id`,
+        userIds
+      ),
+    ]);
+
+    const stats = {};
+    for (const userId of userIds) {
+      stats[userId] = { posts: 0, followers: 0, following: 0 };
+    }
+    
+    for (const row of postsResult.rows) {
+      stats[row.user_id] = { ...stats[row.user_id], posts: parseInt(row.count) };
+    }
+    for (const row of followersResult.rows) {
+      stats[row.user_id] = { ...stats[row.user_id], followers: parseInt(row.count) };
+    }
+    for (const row of followingResult.rows) {
+      stats[row.user_id] = { ...stats[row.user_id], following: parseInt(row.count) };
+    }
+
+    return stats;
+  }
+
+  async isFollowingBatch(followerId, followingIds) {
+    if (!followingIds.length) return {};
+    const placeholders = followingIds.map((_, i) => `$${i + 2}`).join(',');
+    const result = await pool.query(
+      `SELECT following_id FROM user_follows WHERE follower_id = $1 AND following_id IN (${placeholders})`,
+      [followerId, ...followingIds]
+    );
+    const followingSet = new Set(result.rows.map(r => r.following_id));
+    const map = {};
+    for (const id of followingIds) {
+      map[id] = followingSet.has(id);
+    }
+    return map;
+  }
+
+  async isFollowedByBatch(userId, followerIds) {
+    if (!followerIds.length) return {};
+    const placeholders = followerIds.map((_, i) => `$${i + 2}`).join(',');
+    const result = await pool.query(
+      `SELECT follower_id FROM user_follows WHERE following_id = $1 AND follower_id IN (${placeholders})`,
+      [userId, ...followerIds]
+    );
+    const followerSet = new Set(result.rows.map(r => r.follower_id));
+    const map = {};
+    for (const id of followerIds) {
+      map[id] = followerSet.has(id);
+    }
+    return map;
+  }
+
+  async countMutualFollowers(userId1, userId2) {
+    const result = await pool.query(
+      `SELECT COUNT(*) FROM user_follows uf1
+       JOIN user_follows uf2 ON uf2.follower_id = uf1.follower_id
+       WHERE uf1.following_id = $1 AND uf2.following_id = $2`,
+      [userId1, userId2]
+    );
+    return parseInt(result.rows[0].count);
+  }
+
+  async countMutualFollowersBatch(currentUserId, userIds) {
+    if (!userIds.length) return {};
+    const placeholders = userIds.map((_, i) => `$${i + 2}`).join(',');
+    const result = await pool.query(
+      `SELECT uf2.following_id, COUNT(*) as mutual_count
+       FROM user_follows uf1
+       JOIN user_follows uf2 ON uf2.follower_id = uf1.follower_id
+       WHERE uf1.following_id = $1 AND uf2.following_id IN (${placeholders})
+       GROUP BY uf2.following_id`,
+      [currentUserId, ...userIds]
+    );
+    const mutualMap = {};
+    for (const row of result.rows) {
+      mutualMap[row.following_id] = parseInt(row.mutual_count);
+    }
+    // Ensure all userIds have an entry
+    for (const id of userIds) {
+      if (mutualMap[id] === undefined) {
+        mutualMap[id] = 0;
+      }
+    }
+    return mutualMap;
   }
 }
 
