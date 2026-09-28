@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { validateBody, validateQuery, validateParams } from '../../middlewares/validation.middleware.js';
 import { authMiddleware, optionalAuthMiddleware } from '../../middlewares/auth.middleware.js';
 import { userService } from './user.service.js';
+import { followService } from '../follows/follow.service.js';
 import { profileRepository } from './profile.repository.js';
 import { successResponse, errorResponse, paginatedResponse } from '../../common/response/index.js';
 import { getPaginationParams } from '../../common/pagination/index.js';
@@ -37,7 +38,8 @@ router.get('/search', optionalAuthMiddleware, validateQuery(z.object({ q: z.stri
   try {
     const { q } = req.validatedQuery;
     const pagination = getPaginationParams(req.query);
-    const result = await userService.searchUsers(q, pagination);
+    const currentUserId = req.user?.id;
+    const result = await userService.searchUsers(q, pagination, currentUserId);
     res.json(paginatedResponse(result.data, result.pagination));
   } catch (err) {
     next(err);
@@ -82,6 +84,44 @@ router.get('/:id/following', optionalAuthMiddleware, validateParams(userIdSchema
     const pagination = getPaginationParams(req.query);
     const result = await userService.getFollowing(req.validatedParams.id, pagination, currentUserId);
     res.json(paginatedResponse(result.data, result.pagination));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/follow', authMiddleware, validateParams(userIdSchema), async (req, res, next) => {
+  try {
+    await followService.follow(req.user.id, req.validatedParams.id);
+    res.json(successResponse(null, 'Successfully followed user'));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/:id/follow', authMiddleware, validateParams(userIdSchema), async (req, res, next) => {
+  try {
+    await followService.unfollow(req.user.id, req.validatedParams.id);
+    res.json(successResponse(null, 'Successfully unfollowed user'));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/:id/relationship', optionalAuthMiddleware, validateParams(userIdSchema), async (req, res, next) => {
+  try {
+    const currentUserId = req.user?.id;
+    const relationship = await userService.getRelationship(req.validatedParams.id, currentUserId);
+    res.json(successResponse(relationship));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/suggestions', authMiddleware, validateQuery(z.object({ limit: z.coerce.number().int().min(1).max(50).default(10) })), async (req, res, next) => {
+  try {
+    const limit = req.validatedQuery.limit;
+    const result = await userService.getSuggestions(req.user.id, { limit });
+    res.json(successResponse(result.data));
   } catch (err) {
     next(err);
   }
