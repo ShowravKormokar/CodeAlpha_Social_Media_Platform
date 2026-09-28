@@ -74,6 +74,17 @@ export class ProfileRepository {
     );
     return result.rows[0] || null;
   }
+
+  async findByUserIds(userIds) {
+    if (!userIds.length) return [];
+    const placeholders = userIds.map((_, i) => `$${i + 1}`).join(',');
+    const result = await pool.query(
+      `SELECT user_id, display_name, bio, avatar_url, cover_url, website_url, location, updated_at
+       FROM profiles WHERE user_id IN (${placeholders})`,
+      userIds
+    );
+    return result.rows;
+  }
 }
 
 export const profileRepository = new ProfileRepository();
