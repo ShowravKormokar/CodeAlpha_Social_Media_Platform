@@ -1,27 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Post - Social Media Platform</title>
+
+  <meta name="description" content="View a post and join the conversation on SocialApp.">
+
+  <meta name="theme-color" content="#222831">
+
+  <title>Post — SocialApp</title>
+
+  <!-- =====================================================
+       ICONS
+       ====================================================== -->
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.9.1/fonts/remixicon.css">
+
+  <!-- =====================================================
+       CORE STYLES
+       ====================================================== -->
+
   <link rel="stylesheet" href="css/reset.css">
+
   <link rel="stylesheet" href="css/variables.css">
+
   <link rel="stylesheet" href="css/global.css">
+
   <link rel="stylesheet" href="css/components.css">
+
+  <!-- =====================================================
+       PAGE STYLES
+       ====================================================== -->
+
   <link rel="stylesheet" href="css/pages/post.css">
 </head>
-<body>
+
+<body class="post-page">
+
   <div id="app">
+
+    <!-- ===================================================
+         NAVIGATION
+         =================================================== -->
+
     <header class="navbar" id="navbar"></header>
+
+
+    <!-- ===================================================
+         CONTENT LAYOUT
+         =================================================== -->
+
     <div class="layout">
+
+      <!-- ================================================
+           MAIN CONTENT
+           ================================================= -->
+
       <main class="main-content" id="main-content">
-        <article class="post-detail" id="post-detail"></article>
-        <section class="comments-section" id="comments-section"></section>
+
+        <!-- Post -->
+        <section class="post-detail" id="post-detail" aria-label="Post"></section>
+
+
+        <!-- Comments -->
+        <section class="comments-section" id="comments-section" aria-label="Comments"></section>
+
       </main>
-      <aside class="sidebar-right" id="sidebar-right"></aside>
     </div>
+
   </div>
+
+
+  <!-- =====================================================
+       CONFIG
+       ====================================================== -->
+
   <script src="js/config.js"></script>
+  <script type="module" src="js/main.js"></script>
+
+
+  <!-- =====================================================
+       PAGE SCRIPT
+       ====================================================== -->
+
   <script type="module" src="js/pages/post.js"></script>
+
 </body>
+
 </html>

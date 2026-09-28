@@ -18,4 +18,13 @@ export const followsApi = {
     const query = new URLSearchParams(params).toString();
     return api.get(`/users/${userId}/following?${query}`);
   },
+
+  getRelationship(userId) {
+    return api.get(`/users/${userId}/relationship`);
+  },
+
+  getSuggestions(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return api.get(`/users/suggestions?${query}`);
+  },
 };

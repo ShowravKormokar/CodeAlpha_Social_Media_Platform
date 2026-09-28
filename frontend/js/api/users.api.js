@@ -13,8 +13,9 @@ export const usersApi = {
     return api.patch('/users/me/password', data);
   },
 
-  search(query) {
-    return api.get(`/users/search?q=${encodeURIComponent(query)}`);
+  search(query, params = {}) {
+    const searchParams = new URLSearchParams({ q: query, ...params });
+    return api.get(`/users/search?${searchParams.toString()}`);
   },
 
   getPosts(userId, params = {}) {
