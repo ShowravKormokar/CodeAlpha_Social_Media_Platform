@@ -44,21 +44,39 @@ export class FollowRepository {
 
   async getFollowers(userId, { page = 1, limit = 20 }, currentUserId = null) {
     const offset = (page - 1) * limit;
-    const query = `
-      SELECT uf.follower_id, uf.created_at, u.username, pr.display_name, pr.avatar_url,
-             ${currentUserId ? `(SELECT 1 FROM user_follows WHERE follower_id = '${currentUserId}' AND following_id = uf.follower_id)` : 'FALSE'} as is_following
-      FROM user_follows uf
-      JOIN users u ON u.id = uf.follower_id
-      JOIN profiles pr ON pr.user_id = u.id
-      WHERE uf.following_id = $1 AND u.deleted_at IS NULL AND u.status = 'active'
-      ORDER BY uf.created_at DESC
-      LIMIT $2 OFFSET $3
-    `;
+    let query;
+    let queryParams;
+    
+    if (currentUserId) {
+      query = `
+        SELECT uf.follower_id, uf.created_at, u.username, pr.display_name, pr.avatar_url,
+               EXISTS(SELECT 1 FROM user_follows WHERE follower_id = $4 AND following_id = uf.follower_id) as is_following
+        FROM user_follows uf
+        JOIN users u ON u.id = uf.follower_id
+        JOIN profiles pr ON pr.user_id = u.id
+        WHERE uf.following_id = $1 AND u.deleted_at IS NULL AND u.status = 'active'
+        ORDER BY uf.created_at DESC
+        LIMIT $2 OFFSET $3
+      `;
+      queryParams = [userId, limit, offset, currentUserId];
+    } else {
+      query = `
+        SELECT uf.follower_id, uf.created_at, u.username, pr.display_name, pr.avatar_url,
+               FALSE as is_following
+        FROM user_follows uf
+        JOIN users u ON u.id = uf.follower_id
+        JOIN profiles pr ON pr.user_id = u.id
+        WHERE uf.following_id = $1 AND u.deleted_at IS NULL AND u.status = 'active'
+        ORDER BY uf.created_at DESC
+        LIMIT $2 OFFSET $3
+      `;
+      queryParams = [userId, limit, offset];
+    }
 
     const countQuery = `SELECT COUNT(*) FROM user_follows WHERE following_id = $1`;
 
     const [dataResult, countResult] = await Promise.all([
-      pool.query(query, [userId, limit, offset]),
+      pool.query(query, queryParams),
       pool.query(countQuery, [userId])
     ]);
 
@@ -75,21 +93,39 @@ export class FollowRepository {
 
   async getFollowing(userId, { page = 1, limit = 20 }, currentUserId = null) {
     const offset = (page - 1) * limit;
-    const query = `
-      SELECT uf.following_id, uf.created_at, u.username, pr.display_name, pr.avatar_url,
-             ${currentUserId ? `(SELECT 1 FROM user_follows WHERE follower_id = '${currentUserId}' AND following_id = uf.following_id)` : 'FALSE'} as is_following
-      FROM user_follows uf
-      JOIN users u ON u.id = uf.following_id
-      JOIN profiles pr ON pr.user_id = u.id
-      WHERE uf.follower_id = $1 AND u.deleted_at IS NULL AND u.status = 'active'
-      ORDER BY uf.created_at DESC
-      LIMIT $2 OFFSET $3
-    `;
+    let query;
+    let queryParams;
+    
+    if (currentUserId) {
+      query = `
+        SELECT uf.following_id, uf.created_at, u.username, pr.display_name, pr.avatar_url,
+               EXISTS(SELECT 1 FROM user_follows WHERE follower_id = $4 AND following_id = uf.following_id) as is_following
+        FROM user_follows uf
+        JOIN users u ON u.id = uf.following_id
+        JOIN profiles pr ON pr.user_id = u.id
+        WHERE uf.follower_id = $1 AND u.deleted_at IS NULL AND u.status = 'active'
+        ORDER BY uf.created_at DESC
+        LIMIT $2 OFFSET $3
+      `;
+      queryParams = [userId, limit, offset, currentUserId];
+    } else {
+      query = `
+        SELECT uf.following_id, uf.created_at, u.username, pr.display_name, pr.avatar_url,
+               FALSE as is_following
+        FROM user_follows uf
+        JOIN users u ON u.id = uf.following_id
+        JOIN profiles pr ON pr.user_id = u.id
+        WHERE uf.follower_id = $1 AND u.deleted_at IS NULL AND u.status = 'active'
+        ORDER BY uf.created_at DESC
+        LIMIT $2 OFFSET $3
+      `;
+      queryParams = [userId, limit, offset];
+    }
 
     const countQuery = `SELECT COUNT(*) FROM user_follows WHERE follower_id = $1`;
 
     const [dataResult, countResult] = await Promise.all([
-      pool.query(query, [userId, limit, offset]),
+      pool.query(query, queryParams),
       pool.query(countQuery, [userId])
     ]);
 
