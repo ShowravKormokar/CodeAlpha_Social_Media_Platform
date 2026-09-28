@@ -51,7 +51,14 @@ export class FollowService {
       throw new NotFoundError('User');
     }
 
-    return followRepository.getFollowers(userId, params, currentUserId);
+    const result = await followRepository.getFollowers(userId, params, currentUserId);
+    return {
+      ...result,
+      data: result.data.map(row => ({
+        ...row,
+        isFollowing: row.is_following,
+      })),
+    };
   }
 
   async getFollowing(userId, params, currentUserId = null) {
@@ -60,7 +67,14 @@ export class FollowService {
       throw new NotFoundError('User');
     }
 
-    return followRepository.getFollowing(userId, params, currentUserId);
+    const result = await followRepository.getFollowing(userId, params, currentUserId);
+    return {
+      ...result,
+      data: result.data.map(row => ({
+        ...row,
+        isFollowing: row.is_following,
+      })),
+    };
   }
 
   async isFollowing(followerId, followingId) {
