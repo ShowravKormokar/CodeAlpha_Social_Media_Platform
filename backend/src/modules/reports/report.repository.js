@@ -31,11 +31,13 @@ export class ReportRepository {
     const offset = (page - 1) * limit;
     let whereClause = '';
     const params = [limit, offset];
+    const countParams = [];
     let paramIndex = 3;
 
     if (status) {
       whereClause = 'WHERE status = $1';
       params = [status, limit, offset];
+      countParams = [status];
     }
 
     const query = `
@@ -52,7 +54,7 @@ export class ReportRepository {
 
     const [dataResult, countResult] = await Promise.all([
       pool.query(query, params),
-      pool.query(countQuery, params.slice(0, paramIndex - 2))
+      pool.query(countQuery, countParams)
     ]);
 
     return {
