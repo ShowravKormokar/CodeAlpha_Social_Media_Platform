@@ -1,0 +1,44 @@
+# Root build context exclusions.
+#
+# The running services use `backend/` and `frontend/` as their
+# build contexts and each directory has its own .dockerignore.
+# This file applies if a build is executed from the repository
+# root.
+
+.git
+.gitignore
+.github
+
+# Secrets - never bake these into an image
+.env
+.env.*
+!.env.example
+
+# Compose files are not part of any image
+docker-compose.yml
+docker-compose.*.yml
+compose.yml
+compose.*.yml
+
+# Docker definitions
+**/Dockerfile
+**/.dockerignore
+
+# Dependencies
+node_modules/
+
+# Logs, coverage, caches
+logs/
+*.log
+npm-debug.log*
+coverage/
+.nyc_output/
+.cache/
+
+# Editor / OS metadata
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*~
