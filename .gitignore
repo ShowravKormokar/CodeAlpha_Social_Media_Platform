@@ -6,6 +6,10 @@ node_modules/
 .env.local
 .env.*.local
 
+# Any other env variant, except the committed templates
+.env.*
+!.env.example
+
 # Logs
 logs
 *.log
