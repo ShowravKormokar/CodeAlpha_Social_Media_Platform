@@ -14,7 +14,7 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/posts', postRoutes);
-router.use('/comments', commentRoutes);
+router.use(commentRoutes);
 router.use('/likes', likeRoutes);
 router.use('/feed', feedRoutes);
 router.use('/notifications', notificationRoutes);
