@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Docker build context
+Dockerfile
+.dockerignore
+nginx.conf
+
+# VCS
+.git
+.gitignore
+.github
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Logs and caches
+logs/
+*.log
+.cache/
