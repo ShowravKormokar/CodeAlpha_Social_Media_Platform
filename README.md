@@ -37,6 +37,160 @@ The frontend communicates with the backend exclusively through a RESTful API.
 
 ---
 
+# Quick Start with Docker
+
+The whole stack — PostgreSQL, migrations, the Express API, and the static
+frontend — starts with a single command.
+
+## Prerequisites
+
+```text
+Docker Engine    24+
+Docker Compose   v2 (the `docker compose` command, not `docker-compose`)
+```
+
+Verify:
+
+```bash
+docker --version
+docker compose version
+```
+
+## Start the stack
+
+```bash
+cp .env.example .env      # Windows: copy .env.example .env
+docker compose up -d
+```
+
+The first run builds both images, which takes a few minutes. Later runs reuse
+the Docker layer cache.
+
+## Open the application
+
+| Service         | URL                            |
+| --------------- | ------------------------------ |
+| Frontend (nginx) | http://localhost:5500           |
+| API health check | http://localhost:5000/health    |
+| API base URL     | http://localhost:5000/api/v1    |
+
+The frontend calls the API on the host port directly, so no configuration is
+needed to browse the app locally.
+
+## What happens on startup
+
+Startup order is enforced by health-gated dependencies, so the API never starts
+against an unmigrated database:
+
+```text
+db (PostgreSQL)      healthy after `pg_isready` succeeds
+   ↓
+migrate             runs `node src/database/migrate.js`, then exits 0
+   ↓
+api                 starts only if migrations completed successfully
+   ↓
+frontend            starts only once the API reports healthy
+```
+
+If a migration fails, the `api` service never starts. Check why with:
+
+```bash
+docker compose logs migrate
+```
+
+## Common commands
+
+```bash
+# Follow all logs
+docker compose logs -f
+
+# Logs for one service
+docker compose logs -f api
+
+# Service status
+docker compose ps
+
+# Rebuild after a code change
+docker compose up -d --build
+
+# Stop containers (database data is preserved)
+docker compose down
+
+# Stop and delete the database volume  (destroys all data)
+docker compose down -v
+```
+
+## Seeding demo data
+
+Seeding is **never** automatic, so a fresh volume is never polluted and
+restarting the stack never duplicates content. Run it explicitly when you want
+demo data:
+
+```bash
+docker compose run --rm migrate npm run db:seed
+```
+
+> **Note**
+> The seed script is only partially idempotent. Users and profiles are upserted,
+> but posts and comments are appended, so running it more than once creates
+> duplicates.
+
+## Accessing the database
+
+PostgreSQL is intentionally **not** published to the host, which keeps the
+port free and avoids exposing the database outside the Compose network. Use an
+exec session instead:
+
+```bash
+# psql shell
+docker compose exec db psql -U postgres -d social_media
+
+# Or use psql inside the API container
+docker compose exec api node -e "..."
+```
+
+## Running tests
+
+```bash
+docker compose run --rm api npm test
+```
+
+The test run uses the `db` service already defined in the Compose file, so no
+extra configuration is required.
+
+## Configuration
+
+Every setting lives in the root `.env` file. See [`.env.example`](.env.example)
+for the full list. The most commonly changed values:
+
+| Variable         | Default                  | Purpose                                  |
+| ---------------- | ------------------------ | ---------------------------------------- |
+| `FRONTEND_PORT`  | `5500`                   | Host port for the static frontend        |
+| `API_PORT`       | `5000`                   | Host port for the Express API            |
+| `POSTGRES_DB`    | `social_media`           | Database name created in the container   |
+| `POSTGRES_USER`  | `postgres`               | Database user                            |
+| `POSTGRES_PASSWORD` | `postgres`            | Database password (development only)     |
+| `CORS_ORIGIN`    | `http://localhost:5500`  | Must match the frontend URL you open     |
+| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | dev placeholders | Replace in any real deployment |
+
+`DATABASE_URL` is assembled automatically by `docker-compose.yml` from the
+values above and points at the `db` service on the internal Docker network, so
+it never needs to reference `localhost` from inside a container.
+
+After editing `.env`, apply the change:
+
+```bash
+docker compose up -d
+```
+
+## Development without Docker
+
+Docker is optional. The application also runs directly on Node.js and a local
+PostgreSQL instance — see the software requirements in [Section 6](#6-requirements).
+Use `backend/.env` for the local configuration in that case.
+
+---
+
 # 2. Objective
 
 The primary objective is to build a **maintainable and extensible social-media application** while practicing real-world software engineering concepts.
@@ -857,11 +1011,14 @@ CodeAlpha_Social_Media_Platform/
 │
 ├── README.md
 ├── .gitignore
+├── .dockerignore
 ├── .env.example
 ├── docker-compose.yml
 │
 ├── backend/
 │   │
+│   ├── Dockerfile
+│   ├── .dockerignore
 │   ├── package.json
 │   ├── package-lock.json
 │   │
@@ -938,6 +1095,9 @@ CodeAlpha_Social_Media_Platform/
 │
 └── frontend/
     │
+    ├── Dockerfile
+    ├── .dockerignore
+    ├── nginx.conf
     ├── index.html
     ├── login.html
     ├── register.html
@@ -2255,258 +2415,7 @@ errors
 
 ---
 
-# 47. Development Workflow
-
-Recommended workflow:
-
-```text
-1. Create issue
-2. Define requirement
-3. Design database/API
-4. Implement backend
-5. Write tests
-6. Implement frontend
-7. Test integration
-8. Review
-9. Commit
-```
-
-Example commit style:
-
-```text
-feat(auth): add cookie-based authentication
-feat(posts): add post creation API
-feat(likes): implement post like system
-fix(auth): handle expired access token
-test(posts): add post service tests
-docs(api): document post endpoints
-```
-
----
-
-# 48. Suggested Development Phases
-
-## Phase 1 — Project Foundation
-
-```text
-Repository
-Backend setup
-Frontend setup
-Environment configuration
-Express application
-PostgreSQL connection
-Error handling
-Logging
-```
-
-## Phase 2 — Database
-
-```text
-Schema
-Migrations
-Indexes
-Foreign keys
-Seed data
-```
-
-## Phase 3 — Authentication
-
-```text
-Registration
-Login
-Logout
-Cookie authentication
-Password hashing
-Auth middleware
-```
-
-## Phase 4 — Users
-
-```text
-Profiles
-Profile editing
-User search
-Followers
-Following
-```
-
-## Phase 5 — Posts
-
-```text
-Create
-Read
-Update
-Delete
-Pagination
-Ownership
-```
-
-## Phase 6 — Comments
-
-```text
-Create
-Read
-Update
-Delete
-Pagination
-```
-
-## Phase 7 — Social Engagement
-
-```text
-Likes
-Unlike
-Follow
-Unfollow
-Counters
-```
-
-## Phase 8 — Feed
-
-```text
-Following feed
-Pagination
-Feed queries
-Performance optimization
-```
-
-## Phase 9 — Notifications
-
-```text
-Follow notifications
-Like notifications
-Comment notifications
-Read/unread state
-```
-
-## Phase 10 — Frontend
-
-```text
-Authentication UI
-Feed
-Profile
-Post creation
-Comments
-Likes
-Follow
-Notifications
-```
-
-## Phase 11 — Testing
-
-```text
-Unit tests
-Integration tests
-API tests
-Security tests
-Edge cases
-```
-
-## Phase 12 — Hardening
-
-```text
-Rate limiting
-Helmet
-CORS
-Input validation
-Indexes
-Query optimization
-Graceful shutdown
-Production configuration
-```
-
----
-
-# 49. Important Edge Cases
-
-The implementation must explicitly consider:
-
-### Authentication
-
-```text
-Duplicate email
-Duplicate username
-Wrong password
-Expired token
-Missing token
-Invalid token
-Logout without active session
-```
-
-### Posts
-
-```text
-Empty post
-Very long post
-Non-existent post
-Editing another user's post
-Deleting another user's post
-```
-
-### Comments
-
-```text
-Comment on deleted post
-Empty comment
-Editing another user's comment
-Deleting another user's comment
-```
-
-### Likes
-
-```text
-Duplicate like
-Unlike without like
-Like deleted post
-Concurrent like requests
-```
-
-### Follows
-
-```text
-Follow yourself
-Duplicate follow
-Unfollow without following
-Follow deleted user
-```
-
----
-
-# 50. Definition of Done
-
-A feature is not considered complete simply because the endpoint works.
-
-For each feature:
-
-```text
-Database
-    ↓
-Migration
-    ↓
-Repository
-    ↓
-Service
-    ↓
-Validation
-    ↓
-Controller
-    ↓
-Route
-    ↓
-Authentication/Authorization
-    ↓
-Error handling
-    ↓
-Tests
-    ↓
-Frontend integration
-    ↓
-Documentation
-```
-
----
-
-# 51. Project Principles
+# 47. Project Principles
 
 The project follows these principles:
 
@@ -2552,7 +2461,7 @@ Measure first, then optimize.
 
 ---
 
-# 52. Final Architecture
+# 48. Final Architecture
 
 The resulting application should follow this conceptual architecture:
 
@@ -2599,7 +2508,7 @@ The resulting application should follow this conceptual architecture:
 
 ---
 
-# 53. Project Goal
+# 49. Project Goal
 
 This project should not merely demonstrate:
 
@@ -2615,4 +2524,5 @@ The first version remains intentionally small enough to complete, while the arch
 
 ## License
 
-This project is developed for educational and portfolio purposes.
+This project is developed for Full Stack Software Development internship at CodeAlpha.  
+Design and build by **Showrav Kormokar**
