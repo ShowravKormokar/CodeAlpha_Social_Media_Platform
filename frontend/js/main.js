@@ -158,74 +158,59 @@ function showToast(
   const container =
     getOrCreateToastContainer();
 
-
   const toast =
     document.createElement(
       'div'
     );
 
+  const toastType =
+    ['success', 'error', 'info'].includes(type)
+      ? type
+      : 'info';
 
-  toast.className =
-    `toast ${type}`;
+  toast.className = `toast toast-${toastType}`;
+  toast.setAttribute(
+    'role',
+    toastType === 'error' ? 'alert' : 'status'
+  );
 
+  const icon =
+    document.createElement('i');
+  icon.className = {
+    success: 'ri-checkbox-circle-line',
+    error: 'ri-error-warning-line',
+    info: 'ri-information-line'
+  }[toastType];
+  icon.setAttribute('aria-hidden', 'true');
 
-  toast.innerHTML = `
-    <span>${message}</span>
-
-    <button
-      class="toast-close"
-      type="button"
-      aria-label="Dismiss"
-    >
-      <i
-        class="ri-close-line"
-        aria-hidden="true"
-      ></i>
-    </button>
-  `;
-
+  const text =
+    document.createElement('span');
+  text.className = 'toast-message';
+  text.textContent = message;
 
   const closeButton =
-    toast.querySelector(
-      '.toast-close'
-    );
+    document.createElement('button');
+  closeButton.className = 'toast-close';
+  closeButton.type = 'button';
+  closeButton.setAttribute('aria-label', 'Dismiss notification');
+  closeButton.innerHTML = '<i class="ri-close-line" aria-hidden="true"></i>';
 
+  toast.append(icon, text, closeButton);
+  container.appendChild(toast);
 
-  closeButton.addEventListener(
-    'click',
-    () => {
-      toast.remove();
+  let removeTimer;
+  const dismiss = () => {
+    if (!toast.isConnected || toast.classList.contains('is-dismissing')) {
+      return;
     }
-  );
 
+    window.clearTimeout(removeTimer);
+    toast.classList.add('is-dismissing');
+    window.setTimeout(() => toast.remove(), 220);
+  };
 
-  container.appendChild(
-    toast
-  );
-
-
-  window.setTimeout(
-    () => {
-
-      if (!toast.isConnected) {
-        return;
-      }
-
-
-      toast.style.animation =
-        'slideOut 0.3s ease forwards';
-
-
-      window.setTimeout(
-        () => {
-          toast.remove();
-        },
-        300
-      );
-
-    },
-    5000
-  );
+  closeButton.addEventListener('click', dismiss);
+  removeTimer = window.setTimeout(dismiss, 5000);
 }
 
 
@@ -250,6 +235,7 @@ function getOrCreateToastContainer() {
 
     container.className =
       'toast-container';
+    container.setAttribute('aria-label', 'Notifications');
 
 
     document.body.appendChild(
