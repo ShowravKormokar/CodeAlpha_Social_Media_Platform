@@ -11,11 +11,15 @@ const router = Router();
 const createPostSchema = z.object({
   content: z.string().min(1).max(5000),
   imageUrl: z.string().url().optional().nullable(),
+  // References an uploaded media record; ownership is checked against
+  // the JWT user, never a client-supplied owner.
+  imageMediaId: z.string().uuid().optional().nullable(),
 });
 
 const updatePostSchema = z.object({
   content: z.string().min(1).max(5000).optional(),
   imageUrl: z.string().url().optional().nullable(),
+  imageMediaId: z.string().uuid().optional().nullable(),
 });
 
 const paginationSchema = z.object({

@@ -1,6 +1,8 @@
 import { pool } from '../../config/database.js';
 import { NotFoundError } from '../../errors/AppError.js';
 
+const POST_COLUMNS = `id, user_id, content, image_url, image_media_id, created_at, updated_at, deleted_at`;
+
 export class PostRepository {
   async findById(id, currentUserId = null) {
     let userLikedSubquery = 'FALSE';
@@ -10,7 +12,7 @@ export class PostRepository {
       params.push(currentUserId);
     }
     const query = `
-      SELECT p.*, u.username, pr.display_name, pr.avatar_url,
+      SELECT p.*, u.username, pr.display_name, pr.avatar_url, pr.avatar_media_id,
              (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes_count,
              (SELECT COUNT(*) FROM comments WHERE post_id = p.id AND deleted_at IS NULL) as comments_count,
              ${userLikedSubquery} as user_liked
@@ -25,10 +27,10 @@ export class PostRepository {
 
   async create(data) {
     const result = await pool.query(
-      `INSERT INTO posts (user_id, content, image_url)
-       VALUES ($1, $2, $3)
-       RETURNING id, user_id, content, image_url, created_at, updated_at, deleted_at`,
-      [data.userId, data.content, data.imageUrl || null]
+      `INSERT INTO posts (user_id, content, image_url, image_media_id)
+       VALUES ($1, $2, $3, $4)
+       RETURNING ${POST_COLUMNS}`,
+      [data.userId, data.content, data.imageUrl || null, data.imageMediaId || null]
     );
     return result.rows[0];
   }
@@ -46,6 +48,10 @@ export class PostRepository {
       fields.push(`image_url = $${paramIndex++}`);
       values.push(data.imageUrl);
     }
+    if (data.imageMediaId !== undefined) {
+      fields.push(`image_media_id = $${paramIndex++}`);
+      values.push(data.imageMediaId);
+    }
 
     if (fields.length === 0) return this.findById(id, userId);
 
@@ -53,7 +59,7 @@ export class PostRepository {
 
     const result = await pool.query(
       `UPDATE posts SET ${fields.join(', ')} WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
-       RETURNING id, user_id, content, image_url, created_at, updated_at, deleted_at`,
+       RETURNING ${POST_COLUMNS}`,
       values
     );
     return result.rows[0] || null;
@@ -90,7 +96,7 @@ export class PostRepository {
     }
 
     const query = `
-      SELECT p.*, u.username, pr.display_name, pr.avatar_url,
+      SELECT p.*, u.username, pr.display_name, pr.avatar_url, pr.avatar_media_id,
              (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes_count,
              (SELECT COUNT(*) FROM comments WHERE post_id = p.id AND deleted_at IS NULL) as comments_count,
              ${userLikedSubquery} as user_liked
@@ -128,7 +134,7 @@ export class PostRepository {
     const offset = (page - 1) * limit;
 
     const query = `
-      SELECT p.*, u.username, pr.display_name, pr.avatar_url,
+      SELECT p.*, u.username, pr.display_name, pr.avatar_url, pr.avatar_media_id,
              (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes_count,
              (SELECT COUNT(*) FROM comments WHERE post_id = p.id AND deleted_at IS NULL) as comments_count,
              (SELECT 1 FROM post_likes WHERE post_id = p.id AND user_id = $1) as user_liked
