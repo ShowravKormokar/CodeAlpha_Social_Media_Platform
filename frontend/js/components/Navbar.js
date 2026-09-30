@@ -1,5 +1,6 @@
 import { createElement } from '../utils/dom.js';
 import { appUrl } from '../utils/routes.js';
+import { getUserAvatarMarkup } from '../utils/media.js';
 
 
 export function Navbar({
@@ -111,20 +112,17 @@ export function Navbar({
 
 
     const displayName =
+      currentUser.profile?.displayName ||
       currentUser.name ||
       currentUser.username ||
       'User';
 
-
-    const initial =
-      displayName
-        .charAt(0)
-        .toUpperCase();
+    const avatar = getUserAvatarMarkup(currentUser);
 
 
     userTrigger.innerHTML = `
       <span class="avatar avatar-sm">
-        ${initial}
+        ${avatar}
       </span>
 
       <span>

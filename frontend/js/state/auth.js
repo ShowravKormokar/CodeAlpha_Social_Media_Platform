@@ -63,6 +63,20 @@ const auth = {
     }
   },
 
+  updateProfile(profile) {
+    if (!this.user || !profile) return this.user;
+
+    this.user = {
+      ...this.user,
+      profile: {
+        ...(this.user.profile || {}),
+        ...profile,
+      },
+    };
+    this._notify();
+    return this.user;
+  },
+
   async changePassword(data) {
     try {
       const response = await authApi.changePassword(data);
