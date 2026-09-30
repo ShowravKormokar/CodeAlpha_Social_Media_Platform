@@ -8,6 +8,7 @@ import feedRoutes from '../modules/feed/feed.routes.js';
 import notificationRoutes from '../modules/notifications/notification.routes.js';
 import bookmarkRoutes from '../modules/bookmarks/bookmark.routes.js';
 import reportRoutes from '../modules/reports/report.routes.js';
+import mediaRoutes from '../modules/media/media.routes.js';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/feed', feedRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/bookmarks', bookmarkRoutes);
 router.use('/reports', reportRoutes);
+router.use('/media', mediaRoutes);
 
 export default router;
