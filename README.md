@@ -1,6 +1,3 @@
-Below is a finalized, cleaner `README.md` that incorporates the original project scope plus the engineering-focused additions you completed, especially **secure image upload, sanitization/re-encoding, media abstraction, Dockerization, authentication, social graph, consistency, and maintainability**. I kept it focused enough to be a real GitHub README rather than a full requirements document.  
-
-````md
 # Social Media Platform
 
 A full-stack mini social media platform built with **HTML, CSS, Vanilla JavaScript, Node.js, Express.js, and PostgreSQL**.
