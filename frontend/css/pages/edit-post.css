@@ -1,0 +1,297 @@
+/* =========================================================
+   EDIT POST PAGE
+   ========================================================= */
+
+
+/* =========================================================
+   CARD
+   ========================================================= */
+
+.edit-post-card {
+  background: var(--color-surface);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-raised);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.edit-post-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-text-primary);
+}
+
+.edit-post-header-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border-radius: var(--border-radius-md);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: var(--font-size-lg);
+}
+
+.edit-post-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  margin: 0;
+}
+
+.edit-post-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: var(--spacing-xs) 0 0;
+}
+
+
+/* =========================================================
+   AUTHOR SUMMARY
+   ========================================================= */
+
+.edit-post-author {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-medium);
+}
+
+.edit-post-author-name {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+}
+
+.edit-post-author-username {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
+
+/* =========================================================
+   FORM
+   ========================================================= */
+
+.edit-post-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.edit-post-textarea {
+  width: 100%;
+  min-height: 10rem;
+  padding: var(--spacing-md);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-primary);
+  background: var(--color-surface-inset);
+  border: none;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-inset-sm);
+  resize: vertical;
+  transition: box-shadow var(--transition-fast);
+}
+
+.edit-post-textarea::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.edit-post-textarea:focus {
+  outline: none;
+  box-shadow: var(--shadow-inset-sm), var(--shadow-focus);
+}
+
+.edit-post-textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   FIELD META
+   ========================================================= */
+
+.edit-post-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
+.edit-post-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.edit-post-counter {
+  font-variant-numeric: tabular-nums;
+}
+
+.edit-post-counter.is-warning {
+  color: var(--color-warning);
+}
+
+.edit-post-counter.is-error {
+  color: var(--color-error);
+  font-weight: var(--font-weight-semibold);
+}
+
+.edit-post-error {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+  min-height: 1.25rem;
+}
+
+.edit-post-error:empty {
+  display: none;
+}
+
+
+/* =========================================================
+   FOOTER ACTIONS
+   ========================================================= */
+
+.edit-post-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+}
+
+.edit-post-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  min-width: 8rem;
+}
+
+
+/* =========================================================
+   SPINNER
+   =========================================================
+   Declared locally because the existing `.feed-spinner` lives
+   in feed.css, which this page does not load. */
+
+.edit-post-spinner {
+  width: 17px;
+  height: 17px;
+  display: inline-block;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: edit-post-spin 0.75s linear infinite;
+}
+
+@keyframes edit-post-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* =========================================================
+   LOADING / ERROR STATES
+   ========================================================= */
+
+.edit-post-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-2xl) var(--spacing-lg);
+  color: var(--color-text-secondary);
+}
+
+.edit-post-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-2xl) var(--spacing-lg);
+  text-align: center;
+}
+
+.edit-post-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-2xl);
+}
+
+.edit-post-status-icon.is-error {
+  background: var(--color-error-light);
+  color: var(--color-error);
+}
+
+.edit-post-status-icon.is-info {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.edit-post-status-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.edit-post-status-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+  max-width: 28rem;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 640px) {
+
+  .edit-post-card {
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-md);
+  }
+
+  .edit-post-actions {
+    flex-direction: column-reverse;
+  }
+
+  .edit-post-btn {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .edit-post-textarea {
+    transition: none;
+  }
+}
