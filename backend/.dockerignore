@@ -17,6 +17,9 @@ coverage/
 Dockerfile
 .dockerignore
 
+# Uploaded media is mounted as a volume at runtime, never baked in.
+storage/
+
 # VCS
 .git
 .gitignore
