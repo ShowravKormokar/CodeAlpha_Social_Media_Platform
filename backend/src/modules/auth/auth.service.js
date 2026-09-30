@@ -175,6 +175,7 @@ export class AuthService {
         displayName: profile.display_name,
         bio: profile.bio,
         avatarUrl: profile.avatar_url,
+        avatarMediaId: profile.avatar_media_id,
         coverUrl: profile.cover_url,
         websiteUrl: profile.website_url,
         location: profile.location,

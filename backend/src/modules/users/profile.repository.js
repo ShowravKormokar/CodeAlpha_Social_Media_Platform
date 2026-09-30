@@ -1,11 +1,13 @@
 import { pool } from '../../config/database.js';
 import { NotFoundError } from '../../errors/AppError.js';
 
+const PROFILE_COLUMNS = `user_id, display_name, bio, avatar_url, cover_url, website_url, location,
+       avatar_media_id, banner_media_id, updated_at`;
+
 export class ProfileRepository {
   async findByUserId(userId) {
     const result = await pool.query(
-      `SELECT user_id, display_name, bio, avatar_url, cover_url, website_url, location, updated_at
-       FROM profiles WHERE user_id = $1`,
+      `SELECT ${PROFILE_COLUMNS} FROM profiles WHERE user_id = $1`,
       [userId]
     );
     return result.rows[0] || null;
@@ -15,7 +17,7 @@ export class ProfileRepository {
     const result = await pool.query(
       `INSERT INTO profiles (user_id, display_name, bio, avatar_url, cover_url, website_url, location)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING user_id, display_name, bio, avatar_url, cover_url, website_url, location, updated_at`,
+       RETURNING ${PROFILE_COLUMNS}`,
       [data.userId, data.displayName, data.bio || null, data.avatarUrl || null, data.coverUrl || null, data.websiteUrl || null, data.location || null]
     );
     return result.rows[0];
@@ -42,6 +44,14 @@ export class ProfileRepository {
       fields.push(`cover_url = $${paramIndex++}`);
       values.push(data.coverUrl);
     }
+    if (data.avatarMediaId !== undefined) {
+      fields.push(`avatar_media_id = $${paramIndex++}`);
+      values.push(data.avatarMediaId);
+    }
+    if (data.bannerMediaId !== undefined) {
+      fields.push(`banner_media_id = $${paramIndex++}`);
+      values.push(data.bannerMediaId);
+    }
     if (data.websiteUrl !== undefined) {
       fields.push(`website_url = $${paramIndex++}`);
       values.push(data.websiteUrl);
@@ -57,7 +67,7 @@ export class ProfileRepository {
 
     const result = await pool.query(
       `UPDATE profiles SET ${fields.join(', ')} WHERE user_id = $1
-       RETURNING user_id, display_name, bio, avatar_url, cover_url, website_url, location, updated_at`,
+       RETURNING ${PROFILE_COLUMNS}`,
       values
     );
     return result.rows[0] || null;
@@ -65,7 +75,8 @@ export class ProfileRepository {
 
   async getWithUser(userId) {
     const result = await pool.query(
-      `SELECT p.user_id, p.display_name, p.bio, p.avatar_url, p.cover_url, p.website_url, p.location, p.updated_at,
+      `SELECT p.user_id, p.display_name, p.bio, p.avatar_url, p.cover_url, p.website_url, p.location,
+              p.avatar_media_id, p.banner_media_id, p.updated_at,
               u.id, u.email, u.username, u.status, u.created_at
        FROM profiles p
        JOIN users u ON u.id = p.user_id
@@ -79,8 +90,7 @@ export class ProfileRepository {
     if (!userIds.length) return [];
     const placeholders = userIds.map((_, i) => `$${i + 1}`).join(',');
     const result = await pool.query(
-      `SELECT user_id, display_name, bio, avatar_url, cover_url, website_url, location, updated_at
-       FROM profiles WHERE user_id IN (${placeholders})`,
+      `SELECT ${PROFILE_COLUMNS} FROM profiles WHERE user_id IN (${placeholders})`,
       userIds
     );
     return result.rows;

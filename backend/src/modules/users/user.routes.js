@@ -18,6 +18,10 @@ const updateProfileSchema = z.object({
   coverUrl: z.string().url().optional().nullable(),
   websiteUrl: z.string().url().optional().nullable(),
   location: z.string().max(150).optional(),
+  // References an uploaded media record. `null` clears the image.
+  // Ownership is checked against the JWT user, never a client value.
+  avatarMediaId: z.string().uuid().optional().nullable(),
+  bannerMediaId: z.string().uuid().optional().nullable(),
 });
 
 const changePasswordSchema = z.object({

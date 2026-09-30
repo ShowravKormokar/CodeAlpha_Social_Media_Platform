@@ -2,8 +2,31 @@ import { userRepository } from './user.repository.js';
 import { profileRepository } from './profile.repository.js';
 import { followService } from '../follows/follow.service.js';
 import { followRepository } from '../follows/follow.repository.js';
+import { mediaService } from '../media/media.service.js';
+import { MEDIA_TYPES } from '../media/media.constants.js';
 import { NotFoundError, ConflictError, ForbiddenError } from '../../errors/AppError.js';
 import { getFollowerBadge } from '../../common/utils/followerBadge.js';
+import { logger } from '../../config/logger.js';
+
+/**
+ * Maps a stored profile row to the API shape. An uploaded image is
+ * reported as a media id and resolved by the client through
+ * `GET /api/v1/media/:id/content`; `avatarUrl` / `coverUrl` remain the
+ * source of truth for an externally supplied URL.
+ */
+function formatProfile(profile) {
+  if (!profile) return null;
+  return {
+    displayName: profile.display_name,
+    bio: profile.bio,
+    avatarUrl: profile.avatar_url,
+    avatarMediaId: profile.avatar_media_id,
+    coverUrl: profile.cover_url,
+    bannerMediaId: profile.banner_media_id,
+    websiteUrl: profile.website_url,
+    location: profile.location,
+  };
+}
 
 export class UserService {
   async getProfile(userId) {
@@ -21,14 +44,7 @@ export class UserService {
       username: user.username,
       status: user.status,
       createdAt: user.created_at,
-      profile: profile ? {
-        displayName: profile.display_name,
-        bio: profile.bio,
-        avatarUrl: profile.avatar_url,
-        coverUrl: profile.cover_url,
-        websiteUrl: profile.website_url,
-        location: profile.location,
-      } : null,
+      profile: formatProfile(profile),
       stats,
     };
   }
@@ -66,14 +82,7 @@ export class UserService {
       id: user.id,
       username: user.username,
       createdAt: user.created_at,
-      profile: profile ? {
-        displayName: profile.display_name,
-        bio: profile.bio,
-        avatarUrl: profile.avatar_url,
-        coverUrl: profile.cover_url,
-        websiteUrl: profile.website_url,
-        location: profile.location,
-      } : null,
+      profile: formatProfile(profile),
       stats,
       isFollowing,
       followsYou,
@@ -88,7 +97,10 @@ export class UserService {
       throw new NotFoundError('User');
     }
 
-    const allowedFields = ['displayName', 'bio', 'avatarUrl', 'coverUrl', 'websiteUrl', 'location'];
+    const allowedFields = [
+      'displayName', 'bio', 'avatarUrl', 'coverUrl',
+      'websiteUrl', 'location', 'avatarMediaId', 'bannerMediaId',
+    ];
     const updateData = {};
     for (const key of allowedFields) {
       if (data[key] !== undefined) {
@@ -96,12 +108,71 @@ export class UserService {
       }
     }
 
-    if (Object.keys(updateData).length === 0) {
-      return this.getProfile(userId);
+    // A media reference and the legacy external URL are two sources for
+    // the same slot. Setting the other one clears the first, so the
+    // profile can never show an uploaded image and a stale URL at once.
+    if (updateData.avatarMediaId !== undefined) {
+      if (updateData.avatarUrl === undefined) updateData.avatarUrl = null;
+    } else if (updateData.avatarUrl !== undefined) {
+      if (data.avatarMediaId === undefined) updateData.avatarMediaId = null;
+    }
+    if (updateData.bannerMediaId !== undefined) {
+      if (updateData.coverUrl === undefined) updateData.coverUrl = null;
+    } else if (updateData.coverUrl !== undefined) {
+      if (data.bannerMediaId === undefined) updateData.bannerMediaId = null;
     }
 
-    const profile = await profileRepository.update(userId, updateData);
+    // Ownership and purpose are proven before any reference is written.
+    // `avatarMediaId: null` is a removal, so it skips the lookup.
+    if (updateData.avatarMediaId) {
+      await mediaService.assertOwnedForPurpose(
+        updateData.avatarMediaId, userId, MEDIA_TYPES.PROFILE_AVATAR
+      );
+    }
+    if (updateData.bannerMediaId) {
+      await mediaService.assertOwnedForPurpose(
+        updateData.bannerMediaId, userId, MEDIA_TYPES.PROFILE_BANNER
+      );
+    }
+
+    const before = await profileRepository.findByUserId(userId);
+    const replacingAvatar = before?.avatar_media_id;
+    const replacingBanner = before?.banner_media_id;
+
+    if (Object.keys(updateData).length > 0) {
+      await profileRepository.update(userId, updateData);
+    }
+
+    // Only now that the new references are committed is the previous
+    // media released. A field the caller did not send is left strictly
+    // alone, so updating a banner never disturbs the avatar.
+    const released = [];
+    const hadAvatar = 'avatarMediaId' in updateData;
+    const hadBanner = 'bannerMediaId' in updateData;
+    if (hadAvatar && replacingAvatar && replacingAvatar !== updateData.avatarMediaId) {
+      released.push(replacingAvatar);
+    }
+    if (hadBanner && replacingBanner && replacingBanner !== updateData.bannerMediaId) {
+      released.push(replacingBanner);
+    }
+    await this.releaseReplacedMedia(released, userId);
+
     return this.getProfile(userId);
+  }
+
+  /**
+   * Cleanup runs after the referencing write has succeeded and never
+   * fails the request: a leftover record is recoverable through the
+   * orphan sweep, whereas a failed update would be user-visible.
+   */
+  async releaseReplacedMedia(mediaIds, ownerId) {
+    for (const mediaId of mediaIds) {
+      try {
+        await mediaService.cleanupIfUnreferenced(mediaId, ownerId);
+      } catch (err) {
+        logger.error({ err, mediaId, ownerId }, 'Failed to release replaced profile media');
+      }
+    }
   }
 
   async changePassword(userId, currentPassword, newPassword) {
@@ -146,14 +217,7 @@ export class UserService {
           id: u.id,
           username: u.username,
           createdAt: u.created_at,
-          profile: profile ? {
-            displayName: profile.display_name,
-            bio: profile.bio,
-            avatarUrl: profile.avatar_url,
-            coverUrl: profile.cover_url,
-            websiteUrl: profile.website_url,
-            location: profile.location,
-          } : null,
+          profile: formatProfile(profile),
           stats,
           isFollowing,
           followsYou,
@@ -331,14 +395,7 @@ export class UserService {
           id: u.id,
           username: u.username,
           createdAt: u.created_at,
-          profile: profile ? {
-            displayName: profile.display_name,
-            bio: profile.bio,
-            avatarUrl: profile.avatar_url,
-            coverUrl: profile.cover_url,
-            websiteUrl: profile.website_url,
-            location: profile.location,
-          } : null,
+          profile: formatProfile(profile),
           stats,
           mutualFollowersCount: u.total_mutual || 0,
           followerBadge,
