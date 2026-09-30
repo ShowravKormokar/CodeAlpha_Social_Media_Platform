@@ -464,6 +464,15 @@
   font-size: 17px;
 }
 
+/*
+ * Phase 02: marks the composer's image button once an upload has
+ * succeeded in this session, so it is obvious an image is staged.
+ */
+.create-post-action.has-image {
+  background: rgba(139, 133, 245, 0.16);
+
+  color: #c8c5ff;
+}
 
 /* Post button */
 

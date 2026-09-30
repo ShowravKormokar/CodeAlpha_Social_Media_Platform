@@ -2,8 +2,10 @@ import { auth } from '../state/auth.js';
 import { postsApi } from '../api/posts.api.js';
 import { likesApi } from '../api/likes.api.js';
 import { PostCard } from '../components/PostCard.js';
-import { showToast } from '../main.js';
-import { appUrl } from '../utils/routes.js';
+import { ImageUploadModal } from '../components/ImageUploadModal.js';
+import { showToast, consumePostEditedFlag } from '../main.js';
+import { appUrl, editPostUrl } from '../utils/routes.js';
+import { getUserAvatarMarkup } from '../utils/media.js';
 
 
 /* =========================================================
@@ -52,8 +54,8 @@ const feedEnd =
 
 
 /* =========================================================
-   STATE
-   ========================================================= */
+  STATE
+  ========================================================= */
 
 let currentPage = 1;
 
@@ -65,22 +67,35 @@ let searchTerm = '';
 
 let intersectionObserver = null;
 
-
 /* =========================================================
    HELPERS
    ========================================================= */
 
-function getInitial(user) {
+/* =========================================================
+   IMAGE UPLOAD (Phase 02)
+   ========================================================= */
 
-  const value =
-    user?.name ||
-    user?.username ||
-    'U';
+/**
+ * Opens the shared upload dialog for a post image.
+ *
+ * The dialog owns description, image selection, upload validation and
+ * post creation so image posts are published with one Post action.
+ */
+function openPostImageUpload({ initialContent, onPost, onPosted }) {
 
+  const modal = ImageUploadModal({
+    mediaType: 'post_image',
+    title: 'Create a post',
+    description: 'Write a description and add an image if you like.',
+    initialContent,
+    onPost,
+    onPosted
+  });
 
-  return value
-    .charAt(0)
-    .toUpperCase();
+  modal.open();
+
+  return modal;
+
 }
 
 
@@ -105,7 +120,7 @@ function createPostForm() {
     <div class="create-post-header">
 
       <span class="avatar">
-        ${getInitial(auth.user)}
+        ${getUserAvatarMarkup(auth.user)}
       </span>
 
 
@@ -183,22 +198,44 @@ function createPostForm() {
       '#add-image-btn'
     );
 
-
   /* =======================================================
      IMAGE
+
+     The reusable upload flow is wired up, and the resulting media
+     record is held here until the post that references it is created.
+     If the post is never created the upload stays unreferenced and is
+     reclaimed by the media orphan sweep.
      ======================================================= */
 
   imageButton.addEventListener(
     'click',
     () => {
 
-      showToast(
-        'Image uploads are not connected to the current post API yet.',
-        'info'
+      openPostImageUpload(
+        {
+          initialContent: textarea.value,
+          onPost: async ({ content, media }) => {
+            const response = await postsApi.create({
+              content,
+              ...(media ? { imageMediaId: media.id } : {})
+            });
+
+            if (!response.success) {
+              throw new Error(response.error?.message || 'Failed to create post.');
+            }
+
+            return response;
+          },
+          onPosted: () => {
+            textarea.value = '';
+            showToast('Post created successfully.', 'success');
+            loadPosts(true);
+          }
+        }
       );
+
     }
   );
-
 
   /* =======================================================
      SUBMIT
@@ -251,7 +288,10 @@ function createPostForm() {
 
         const response =
           await postsApi.create({
-            content
+            content,
+            // The uploaded image is referenced by the new post. The
+            // server writes the reference first and only then releases
+            // any image the post previously used.
           });
 
 
@@ -328,6 +368,15 @@ function createPostForm() {
 
   return wrapper;
 }
+
+function updateComposerAvatar(user) {
+  const avatar = createPostContainer?.querySelector('.create-post-header > .avatar');
+  if (!avatar) return;
+
+  avatar.innerHTML = getUserAvatarMarkup(user);
+}
+
+auth.subscribe(updateComposerAvatar);
 
 
 /* =========================================================
@@ -554,6 +603,9 @@ async function loadPosts(
             onDelete:
               handleDelete,
 
+            onEdit:
+              handleEdit,
+
             onAuthorClick:
               (userId) => {
 
@@ -712,6 +764,25 @@ function handleComment(
 
 
 /* =========================================================
+   EDIT
+   ========================================================= */
+
+function handleEdit(
+  postId
+) {
+
+  /*
+   * Hand off to the dedicated editor, which loads the post,
+   * lets the author change it, and returns here on save.
+   * The feed re-reads the posts from the API on load, so the
+   * updated content appears without any extra plumbing.
+   */
+
+  window.location.href = editPostUrl(postId);
+}
+
+
+/* =========================================================
    DELETE
    ========================================================= */
 
@@ -732,32 +803,18 @@ async function handleDelete(
 
   try {
 
-    const response =
-      await postsApi.delete(
-        postId
-      );
+    await postsApi.delete(
+      postId
+    );
 
+    showToast(
+      'Post deleted.',
+      'success'
+    );
 
-    if (response.success) {
-
-      showToast(
-        'Post deleted.',
-        'success'
-      );
-
-
-      await loadPosts(
-        true
-      );
-
-    } else {
-
-      showToast(
-        response.error?.message ||
-        'Failed to delete post.',
-        'error'
-      );
-    }
+    await loadPosts(
+      true
+    );
 
   } catch (error) {
 
@@ -1068,6 +1125,8 @@ async function initFeed() {
     createPostContainer.replaceChildren(
       createPostForm()
     );
+
+    updateComposerAvatar(auth.user);
   }
 
 
@@ -1083,6 +1142,9 @@ async function initFeed() {
   await loadPosts(
     true
   );
+
+
+  consumePostEditedFlag();
 }
 
 
