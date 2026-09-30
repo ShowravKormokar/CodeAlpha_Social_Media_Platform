@@ -1,5 +1,11 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
 config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const BACKEND_ROOT = path.resolve(__dirname, '..', '..');
 
 const durationUnits = {
   ms: 1,
@@ -57,5 +63,30 @@ export const env = {
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
+  },
+
+  media: {
+    // Only `local` exists in Phase 01. The value selects the
+    // StorageProvider implementation (see modules/media/media.storage.js).
+    storageProvider: process.env.MEDIA_STORAGE_PROVIDER || 'local',
+
+    // Uploads live outside src/ so they can never be served or
+    // executed as application resources.
+    uploadDir: process.env.MEDIA_UPLOAD_DIR
+      ? path.resolve(process.env.MEDIA_UPLOAD_DIR)
+      : path.join(BACKEND_ROOT, 'storage', 'uploads'),
+
+    // Public URL prefix that maps onto uploadDir.
+    publicPath: process.env.MEDIA_PUBLIC_PATH || '/uploads',
+
+    // Hard ceiling applied by Multer before any decoding happens.
+    // Per-purpose limits live in modules/media/media.constants.js.
+    maxFileSize: parseInt(process.env.MEDIA_MAX_FILE_SIZE || '8388608', 10), // 8 MB
+
+    maxFiles: parseInt(process.env.MEDIA_MAX_FILES || '1', 10),
+
+    // Output quality for the re-encoded WebP/JPEG files.
+    webpQuality: parseInt(process.env.MEDIA_WEBP_QUALITY || '82', 10),
+    jpegQuality: parseInt(process.env.MEDIA_JPEG_QUALITY || '85', 10),
   },
 };
