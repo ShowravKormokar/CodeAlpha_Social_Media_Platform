@@ -47,6 +47,11 @@ COPY --chown=appuser:nodejs package.json ./
 # are executed by the dedicated `migrate` compose service.
 COPY --chown=appuser:nodejs src ./src
 
+# Uploaded images are written here, outside `src`, so they can never
+# be served or executed as application resources. Backed by the
+# `media_data` volume in docker-compose.yml.
+RUN mkdir -p /app/storage/uploads && chown -R appuser:nodejs /app/storage
+
 USER appuser
 
 EXPOSE 5000
