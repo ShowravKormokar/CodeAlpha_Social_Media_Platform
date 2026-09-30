@@ -1,0 +1,655 @@
+/* =========================================================
+   IMAGE UPLOAD
+   =========================================================
+   Styles for the reusable upload dialog (ImageUploadModal).
+   Used by profile_avatar, profile_banner and post_image — the
+   per-purpose differences are driven by the
+   `.upload-dialog--circle | --wide | --contain` modifiers.
+
+   Relies only on the tokens in variables.css, so light and dark
+   mode are handled without a second set of rules.
+   ========================================================= */
+
+
+/* =========================================================
+   OVERLAY
+   ========================================================= */
+
+.upload-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-index-modal-backdrop);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: var(--spacing-lg);
+  padding-bottom: max(var(--spacing-lg), env(safe-area-inset-bottom));
+
+  background: rgba(32, 38, 54, 0.42);
+  backdrop-filter: blur(3px);
+
+  opacity: 0;
+
+  transition: opacity var(--transition-base);
+}
+
+.upload-overlay[hidden] {
+  display: none;
+}
+
+.upload-overlay.is-open {
+  opacity: 1;
+}
+
+
+/* =========================================================
+   DIALOG
+   ========================================================= */
+
+.upload-dialog {
+  display: flex;
+  flex-direction: column;
+
+  width: min(560px, 100%);
+  max-height: calc(100dvh - 2 * var(--spacing-lg));
+
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-xl);
+
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-raised-lg);
+
+  /* Keeps the dialog itself reachable when it holds no focusable
+     child, which the focus trap relies on. */
+  outline: none;
+
+  transform: translateY(10px) scale(0.985);
+
+  transition: transform var(--transition-base);
+}
+
+.upload-overlay.is-open .upload-dialog {
+  transform: translateY(0) scale(1);
+}
+
+.upload-dialog:focus-visible {
+  box-shadow:
+    var(--shadow-raised-lg),
+    var(--shadow-focus);
+}
+
+.upload-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+
+  padding: var(--spacing-lg) var(--spacing-lg) 0;
+}
+
+.upload-dialog-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.upload-dialog-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+
+  width: 36px;
+  height: 36px;
+
+  border: 0;
+  border-radius: var(--border-radius-sm);
+
+  background: transparent;
+  color: var(--color-text-tertiary);
+
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.upload-dialog-close:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.upload-dialog-close:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.upload-dialog-close:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.upload-dialog-close i {
+  font-size: 21px;
+}
+
+.upload-dialog-description {
+  padding: var(--spacing-xs) var(--spacing-lg) 0;
+
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.upload-post-description-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.upload-post-description-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.upload-post-description {
+  width: 100%;
+  min-height: 104px;
+  max-height: 220px;
+  padding: var(--spacing-sm) var(--spacing-md);
+
+  resize: vertical;
+
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+
+  background: var(--color-surface-inset);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+}
+
+.upload-post-description::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.upload-post-description:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   BODY + PANELS
+   ========================================================= */
+
+.upload-dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+
+  /* Scrolls rather than overflowing the viewport on small screens. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  padding: var(--spacing-lg);
+}
+
+.upload-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.upload-panel[hidden] {
+  display: none;
+}
+
+
+/* =========================================================
+   DROPZONE
+   ========================================================= */
+
+.upload-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+
+  width: 100%;
+  min-height: 232px;
+
+  padding: var(--spacing-xl) var(--spacing-lg);
+
+  border: 2px dashed var(--color-border-medium);
+  border-radius: var(--border-radius-lg);
+
+  background: var(--color-surface-inset);
+  box-shadow: var(--shadow-inset-sm);
+
+  color: var(--color-text-secondary);
+  text-align: center;
+
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.upload-dropzone:hover {
+  border-color: var(--color-border-focus);
+}
+
+.upload-dropzone:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow:
+    var(--shadow-inset-sm),
+    var(--shadow-focus);
+}
+
+.upload-dropzone.is-dragover {
+  border-color: var(--color-primary);
+  border-style: solid;
+  background: var(--color-primary-light);
+  box-shadow:
+    var(--shadow-inset-sm),
+    var(--shadow-focus);
+}
+
+.upload-dropzone-icon {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+
+  color: var(--color-primary);
+  font-size: 40px;
+  line-height: 1;
+}
+
+.upload-dropzone-title {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.upload-dropzone-hint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.upload-dropzone-meta {
+  margin-top: var(--spacing-xs);
+
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.upload-ratio-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-relaxed);
+}
+
+.upload-ratio-note i {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  font-size: 15px;
+}
+
+
+/* =========================================================
+   PREVIEW
+   ========================================================= */
+
+.upload-preview-frame {
+  display: grid;
+  place-items: center;
+
+  overflow: hidden;
+
+  background: var(--color-surface-inset);
+  box-shadow: var(--shadow-inset-sm);
+}
+
+.upload-preview-image {
+  display: block;
+  max-width: 100%;
+  max-height: 320px;
+  width: auto;
+  height: auto;
+}
+
+/* Avatar: square frame, circular image. */
+.upload-dialog--circle .upload-preview-frame {
+  width: 220px;
+  height: 220px;
+  margin-inline: auto;
+
+  border-radius: 50%;
+}
+
+.upload-dialog--circle .upload-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Banner: wide frame with the recommended 16:9 crop visible. */
+.upload-dialog--wide .upload-preview-frame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--border-radius-md);
+}
+
+.upload-dialog--wide .upload-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Post image: natural aspect ratio, contained, never cropped. */
+.upload-dialog--contain .upload-preview-frame {
+  width: 100%;
+  max-height: 320px;
+  border-radius: var(--border-radius-md);
+}
+
+.upload-dialog--contain .upload-preview-image {
+  max-height: 320px;
+  object-fit: contain;
+}
+
+.upload-file-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+
+  margin: 0;
+}
+
+.upload-file-meta-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: var(--spacing-sm);
+  align-items: baseline;
+}
+
+.upload-file-meta-label {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.upload-file-meta dd {
+  min-width: 0;
+  margin: 0;
+
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+
+  /* Long filenames wrap instead of widening the dialog. */
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   PROGRESS
+   ========================================================= */
+
+.upload-spinner {
+  align-self: center;
+
+  width: 40px;
+  height: 40px;
+
+  border: 3px solid var(--color-border-medium);
+  border-top-color: var(--color-primary);
+
+  border-radius: 50%;
+
+  animation: spinner 700ms linear infinite;
+}
+
+.upload-spinner[hidden] {
+  display: none;
+}
+
+.upload-progress-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.upload-progress-status {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+}
+
+.upload-progress-track {
+  position: relative;
+
+  height: 10px;
+
+  overflow: hidden;
+
+  border-radius: var(--border-radius-full);
+
+  background: var(--color-surface-inset);
+  box-shadow: var(--shadow-inset-sm);
+}
+
+.upload-progress-track[hidden] {
+  display: none;
+}
+
+.upload-progress-bar {
+  width: 0;
+  height: 100%;
+
+  border-radius: var(--border-radius-full);
+
+  background: linear-gradient(145deg,
+      var(--color-primary),
+      var(--color-primary-hover));
+
+  /* Short transition so the bar tracks the network rather than
+     animating behind it. */
+  transition: width 120ms linear;
+}
+
+.upload-progress-percent {
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+}
+
+.upload-progress-percent[hidden] {
+  display: none;
+}
+
+
+/* =========================================================
+   SUCCESS + ERROR
+   ========================================================= */
+
+.upload-result-icon {
+  align-self: center;
+  font-size: 46px;
+  line-height: 1;
+}
+
+.upload-result-icon--success {
+  color: var(--color-success);
+}
+
+.upload-result-icon--error {
+  color: var(--color-error);
+}
+
+.upload-result-frame {
+  display: grid;
+  place-items: center;
+
+  overflow: hidden;
+
+  border-radius: var(--border-radius-md);
+
+  background: var(--color-surface-inset);
+  box-shadow: var(--shadow-inset-sm);
+}
+
+.upload-result-image {
+  max-width: 100%;
+  max-height: 220px;
+  width: auto;
+  height: auto;
+}
+
+.upload-result-title {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+}
+
+.upload-result-detail,
+.upload-result-message {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.upload-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+
+  padding: var(--spacing-md) var(--spacing-lg);
+
+  border-top: 1px solid var(--color-border-light);
+}
+
+/* An in-flight upload owns the dialog: nothing behind it can be
+   activated, so pointer events stop here. */
+.upload-dialog.is-busy {
+  cursor: progress;
+}
+
+.upload-dialog.is-busy .upload-dialog-body,
+.upload-dialog.is-busy .upload-dialog-footer {
+  pointer-events: none;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 560px) {
+  .upload-overlay {
+    align-items: flex-end;
+    padding: var(--spacing-sm);
+    padding-bottom: max(var(--spacing-sm), env(safe-area-inset-bottom));
+  }
+
+  .upload-dialog {
+    width: 100%;
+    max-height: calc(100dvh - 2 * var(--spacing-sm));
+    border-radius: var(--border-radius-lg);
+  }
+
+  .upload-dialog-header {
+    padding: var(--spacing-md) var(--spacing-md) 0;
+  }
+
+  .upload-dialog-description {
+    padding: var(--spacing-xs) var(--spacing-md) 0;
+  }
+
+  .upload-dialog-body {
+    padding: var(--spacing-md);
+  }
+
+  .upload-dialog-footer {
+    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+
+    /* Full-width stacked buttons give a comfortable tap target and
+       prevent the footer from wrapping awkwardly. */
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .upload-dialog-footer .btn {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .upload-dropzone {
+    min-height: 188px;
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+
+  .upload-dropzone-icon {
+    font-size: 34px;
+  }
+
+  .upload-file-meta-row {
+    grid-template-columns: 82px minmax(0, 1fr);
+  }
+
+  .upload-dialog--circle .upload-preview-frame {
+    width: 168px;
+    height: 168px;
+  }
+
+  .upload-preview-image,
+  .upload-dialog--contain .upload-preview-image {
+    max-height: 240px;
+  }
+
+  .upload-dialog--contain .upload-preview-frame {
+    max-height: 240px;
+  }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .upload-overlay,
+  .upload-dialog {
+    transition: none;
+  }
+
+  .upload-spinner {
+    animation-duration: 1.6s;
+  }
+
+  .upload-progress-bar {
+    transition: none;
+  }
+}
