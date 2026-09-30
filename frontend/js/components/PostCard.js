@@ -1,7 +1,9 @@
 import { createElement } from '../utils/dom.js';
-import { formatRelativeTime, getInitials } from '../utils/format.js';
+import { formatRelativeTime } from '../utils/format.js';
 import { getFollowerBadge } from '../utils/followerBadge.js';
 import { appUrl } from '../utils/routes.js';
+import { mediaApi } from '../api/media.api.js';
+import { getAvatarMarkup } from '../utils/media.js';
 
 function escapeHTML(value = '') {
   return String(value)
@@ -20,8 +22,16 @@ function getUsername(post) {
   return post.author?.username || post.username || 'user';
 }
 
-function getAvatarContent(post) {
-  return getInitials(getAuthorName(post));
+/**
+ * Resolves the image to display. An uploaded image is referenced by
+ * media id and served through the media content endpoint; an external
+ * URL is used as-is.
+ */
+function getPostImageSrc(post) {
+  if (post.image_media_id) {
+    return mediaApi.getContentUrl(post.image_media_id);
+  }
+  return post.image_url || '';
 }
 
 export function PostCard({
@@ -46,12 +56,17 @@ export function PostCard({
 
   const authorName = escapeHTML(getAuthorName(post));
   const username = escapeHTML(getUsername(post));
-  const avatar = escapeHTML(getAvatarContent(post));
+  const avatar = getAvatarMarkup({
+    name: getAuthorName(post),
+    mediaId: post.author?.avatarMediaId || post.author?.avatar_media_id,
+    fallbackUrl: post.author?.avatarUrl || post.author?.avatar_url
+  });
   const content = escapeHTML(post.content || '').replace(/\n/g, '<br>');
 
   const likesCount = Number(post.likes_count) || 0;
   const commentsCount = Number(post.comments_count) || 0;
   const isLiked = Boolean(post.user_liked);
+  const postImageSrc = getPostImageSrc(post);
 
   // Follower badge for author
   const authorFollowersCount = post.author?.stats?.followers || 0;
@@ -146,11 +161,11 @@ export function PostCard({
       : ''
     }
 
-      ${post.image_url
+      ${postImageSrc
       ? `
             <div class="post-media">
               <img
-                src="${escapeHTML(post.image_url)}"
+                src="${escapeHTML(postImageSrc)}"
                 alt="Image shared by ${authorName}"
                 class="post-image"
                 loading="lazy"
@@ -357,6 +372,7 @@ export function normalizePost(post = {}) {
     created_at: post.created_at || post.createdAt,
     updated_at: post.updated_at || post.updatedAt,
     image_url: post.image_url || post.imageUrl,
+    image_media_id: post.image_media_id || post.imageMediaId,
     likes_count: post.likes_count ?? post.likesCount,
     comments_count: post.comments_count ?? post.commentsCount,
     user_liked: post.user_liked ?? post.userLiked,
@@ -364,7 +380,9 @@ export function normalizePost(post = {}) {
       ...author,
       id: author.id ?? userId,
       name,
-      username: username || 'user'
+      username: username || 'user',
+      avatarUrl: author.avatarUrl ?? author.avatar_url ?? post.avatarUrl ?? post.avatar_url,
+      avatarMediaId: author.avatarMediaId ?? author.avatar_media_id ?? post.avatarMediaId ?? post.avatar_media_id
     }
   };
 }

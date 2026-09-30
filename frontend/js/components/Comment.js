@@ -1,6 +1,7 @@
 import { createElement } from '../utils/dom.js';
-import { formatRelativeTime, getInitials } from '../utils/format.js';
+import { formatRelativeTime } from '../utils/format.js';
 import { appUrl } from '../utils/routes.js';
+import { getAvatarMarkup } from '../utils/media.js';
 
 function escapeHTML(value = '') {
   return String(value)
@@ -17,7 +18,11 @@ export function Comment({ comment, currentUser, onDelete, onUpdate }) {
   const username = author.username || comment.username || '';
   const authorName = author.displayName || author.display_name || author.name ||
     comment.display_name || comment.displayName || username || 'User';
-  const avatarUrl = author.avatarUrl || author.avatar_url || comment.avatar_url;
+  const avatar = getAvatarMarkup({
+    name: authorName,
+    mediaId: author.avatarMediaId || author.avatar_media_id || comment.avatar_media_id,
+    fallbackUrl: author.avatarUrl || author.avatar_url || comment.avatar_url
+  });
   const createdAt = comment.created_at || comment.createdAt;
   const content = comment.content || '';
   const isAuthor = currentUser && String(userId) === String(currentUser.id);
@@ -25,10 +30,8 @@ export function Comment({ comment, currentUser, onDelete, onUpdate }) {
   const commentEl = createElement('article', { class: 'comment-item', 'data-comment-id': comment.id });
 
   commentEl.innerHTML = `
-    <span class="comment-avatar">
-      ${avatarUrl
-      ? `<img class="avatar avatar-sm" src="${escapeHTML(avatarUrl)}" alt="">`
-      : `<span class="avatar avatar-sm" aria-hidden="true">${escapeHTML(getInitials(authorName))}</span>`}
+    <span class="comment-avatar avatar avatar-sm" aria-hidden="true">
+      ${avatar}
     </span>
     <div class="comment-body">
       <div class="comment-header">
