@@ -44,6 +44,10 @@ Thumbs.db
 *.sqlite
 *.db
 
+# Uploaded media (never committed)
+backend/storage/
+backend/.tmp-test-uploads/
+
 # Misc
 *.pem
 .cache/
