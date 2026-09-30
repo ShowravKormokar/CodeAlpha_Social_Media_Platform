@@ -249,6 +249,43 @@ function getOrCreateToastContainer() {
 
 
 /* =========================================================
+   POST EDIT FEEDBACK
+   ========================================================= */
+
+/**
+ * Shows a confirmation when the user returns from the edit-post
+ * page, then cleans the flag out of the URL so the message does
+ * not reappear on refresh or on a later navigation.
+ *
+ * The edited post itself needs no special handling: pages read
+ * their data from the API on load, so the new content is already
+ * correct.
+ */
+function consumePostEditedFlag() {
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get('edited') !== '1') {
+    return;
+  }
+
+  params.delete('edited');
+
+  const search = params.toString();
+
+  const cleanedUrl =
+    `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`;
+
+  window.history.replaceState(
+    null,
+    '',
+    cleanedUrl
+  );
+
+  showToast('Post updated successfully.', 'success');
+}
+
+
+/* =========================================================
    START
    ========================================================= */
 
@@ -259,5 +296,6 @@ document.addEventListener(
 
 
 export {
-  showToast
+  showToast,
+  consumePostEditedFlag
 };
