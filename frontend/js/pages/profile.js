@@ -1,11 +1,13 @@
 import { auth } from '../state/auth.js';
-import { usersApi, postsApi } from '../api/index.js';
+import { usersApi, postsApi, likesApi } from '../api/index.js';
 import { PostCard } from '../components/PostCard.js';
+import { ImageUploadModal } from '../components/ImageUploadModal.js';
+import { mediaApi } from '../api/media.api.js';
 import { followsApi } from '../api/follows.api.js';
-import { showToast } from '../main.js';
+import { showToast, consumePostEditedFlag } from '../main.js';
 import { formatRelativeTime, getInitials, formatNumber } from '../utils/format.js';
 import { renderFollowerBadge, getFollowerBadge } from '../utils/followerBadge.js';
-import { appUrl } from '../utils/routes.js';
+import { appUrl, editPostUrl } from '../utils/routes.js';
 
 const profileHeader = document.getElementById('profile-header');
 const profileTabs = document.getElementById('profile-tabs');
@@ -17,6 +19,26 @@ let currentTab = 'posts';
 let postsPage = 1;
 let postsLoading = false;
 let postsHasMore = true;
+
+/*
+ * Holds the most recent upload per profile image between the upload
+ * completing and the profile referencing it. Cleared once persisted;
+ * a draft left behind by a failed save is reclaimed by the orphan
+ * sweep.
+ */
+const mediaDrafts = {
+  avatar: null,
+  banner: null
+};
+
+/**
+ * The media record most recently uploaded for each profile image, or
+ * null. Exported so the profile update path can persist them without
+ * reaching into the upload component.
+ */
+export function getProfileMediaDrafts() {
+  return { ...mediaDrafts };
+}
 
 function getUserIdFromUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -54,6 +76,15 @@ function renderProfileHeader() {
   const mutualFollowersCount = user.mutualFollowersCount || 0;
   const followerBadge = user.followerBadge || getFollowerBadge(stats.followers || 0);
 
+  // An uploaded image is stored as a media id and resolved through the
+  // media content endpoint, so no absolute URL is baked into the page.
+  const avatarSrc = profile.avatarMediaId
+    ? mediaApi.getContentUrl(profile.avatarMediaId)
+    : profile.avatarUrl;
+  const bannerSrc = profile.bannerMediaId
+    ? mediaApi.getContentUrl(profile.bannerMediaId)
+    : profile.coverUrl;
+
   const badgeHtml = `
     <span class="profile-tier-badge profile-tier-${followerBadge.key} badge-sm"
           title="${followerBadge.label} — ${followerBadge.minFollowers.toLocaleString()}+ followers"
@@ -63,9 +94,9 @@ function renderProfileHeader() {
   `;
 
   profileHeader.innerHTML = `
-    <div class="profile-cover" style="background-image: url('${profile.coverUrl || ''}')"></div>
+    <div class="profile-cover" style="background-image: url('${bannerSrc || ''}')"></div>
     <div class="profile-avatar">
-      ${profile.avatarUrl ? `<img src="${profile.avatarUrl}" alt="">` : getInitials(profile.displayName || user.username)}
+      ${avatarSrc ? `<img src="${avatarSrc}" alt="">` : getInitials(profile.displayName || user.username)}
     </div>
     <div class="profile-info">
       <h1 class="profile-name">${profile.displayName || user.username} ${!isOwnProfile ? badgeHtml : ''}</h1>
@@ -94,13 +125,146 @@ function renderProfileHeader() {
           ${isFollowing ? 'Following' : 'Follow'}
         </button>
       ` : `
-        <a href="${appUrl('settings.html')}" class="btn btn-secondary">Edit Profile</a>
+        <div class="profile-media-actions">
+          <button type="button" class="btn btn-secondary profile-media-btn" id="change-banner-btn">
+            <i class="ri-image-2-line" aria-hidden="true"></i>
+            <span>Change banner</span>
+          </button>
+          <button type="button" class="btn btn-secondary profile-media-btn" id="change-avatar-btn">
+            <i class="ri-user-face-line" aria-hidden="true"></i>
+            <span>Change photo</span>
+          </button>
+          ${avatarSrc
+      ? `
+            <button type="button" class="btn btn-secondary profile-media-btn profile-media-btn-danger" id="remove-avatar-btn">
+              <i class="ri-delete-bin-line" aria-hidden="true"></i>
+              <span>Remove photo</span>
+            </button>
+          `
+      : ''}
+          <a href="${appUrl('settings.html')}" class="btn btn-secondary">Edit Profile</a>
+        </div>
       `}
     </div>
   `;
 
   const followBtn = profileHeader.querySelector('.follow-btn');
   followBtn?.addEventListener('click', handleFollowToggle);
+
+  setupMediaTriggers();
+}
+
+/**
+ * Paints an image uploaded earlier in this session. The draft is
+ * cleared once the upload has been persisted, because the profile now
+ * carries the reference itself and a reload will render it.
+ */
+function applyMediaDrafts() {
+  if (!mediaDrafts.avatar) return;
+
+  const avatarSlot = profileHeader.querySelector('.profile-avatar');
+
+  if (!avatarSlot) return;
+
+  avatarSlot.replaceChildren();
+
+  const image = document.createElement('img');
+  image.alt = '';
+  image.src = mediaApi.getContentUrl(mediaDrafts.avatar.id);
+
+  avatarSlot.appendChild(image);
+
+  if (!mediaDrafts.banner) return;
+
+  const cover = profileHeader.querySelector('.profile-cover');
+
+  if (!cover) return;
+
+  cover.style.backgroundImage = `url("${mediaApi.getContentUrl(mediaDrafts.banner.id)}")`;
+}
+
+/**
+ * Links a freshly uploaded image to the profile. The media record is
+ * written to the profile first; only after that succeeds is the server
+ * free to release the image it replaced.
+ */
+async function persistMediaDraft(slot) {
+  const draft = mediaDrafts[slot];
+  if (!draft) return false;
+
+  const field = slot === 'avatar' ? 'avatarMediaId' : 'bannerMediaId';
+
+  try {
+    const response = await usersApi.updateProfile({ [field]: draft.id });
+    currentUserProfile = response?.data || currentUserProfile;
+    auth.updateProfile(currentUserProfile?.profile);
+    mediaDrafts[slot] = null;
+    return true;
+  } catch (err) {
+    // The profile is unchanged, so the upload is left unreferenced and
+    // the orphan sweep reclaims it. Surface the failure rather than
+    // pretending the image was saved.
+    showToast(err.message || 'Could not update your profile image', 'error');
+    return false;
+  }
+}
+
+function setupMediaTriggers() {
+  profileHeader
+    .querySelector('#remove-avatar-btn')
+    ?.addEventListener('click', async () => {
+      // The reference is cleared first; the server only releases the
+      // stored file once nothing points at it.
+      try {
+        const response = await usersApi.updateProfile({ avatarMediaId: null });
+        currentUserProfile = response?.data || currentUserProfile;
+        auth.updateProfile(currentUserProfile?.profile);
+        showToast('Profile picture removed.', 'success');
+        renderProfileHeader();
+      } catch (err) {
+        showToast(err.message || 'Could not remove your profile picture', 'error');
+      }
+    });
+
+  profileHeader
+    .querySelector('#change-avatar-btn')
+    ?.addEventListener('click', () => {
+
+      const modal = ImageUploadModal({
+        mediaType: 'profile_avatar',
+
+        onUploaded: (media) => {
+          mediaDrafts.avatar = media;
+          applyMediaDrafts();
+          persistMediaDraft('avatar').then((saved) => {
+            if (saved) showToast('Profile picture updated.', 'success');
+          });
+        }
+      });
+
+      modal.open();
+
+    });
+
+  profileHeader
+    .querySelector('#change-banner-btn')
+    ?.addEventListener('click', () => {
+
+      const modal = ImageUploadModal({
+        mediaType: 'profile_banner',
+
+        onUploaded: (media) => {
+          mediaDrafts.banner = media;
+          applyMediaDrafts();
+          persistMediaDraft('banner').then((saved) => {
+            if (saved) showToast('Profile banner updated.', 'success');
+          });
+        }
+      });
+
+      modal.open();
+
+    });
 }
 
 function renderTabs() {
@@ -180,6 +344,7 @@ async function loadPosts(container, reset = false) {
           onLike: handleLike,
           onComment: handleComment,
           onDelete: isOwnProfile ? handleDelete : undefined,
+          onEdit: isOwnProfile ? handleEdit : undefined,
           onAuthorClick: (userId) => window.location.href = appUrl(`profile.html?userId=${userId}`)
         });
         container.appendChild(card);
@@ -219,7 +384,7 @@ async function handleFollowToggle() {
       if (currentUserProfile.stats) currentUserProfile.stats.followers++;
     }
     showToast(isFollowing ? 'Unfollowed' : 'Following!', 'success');
-    
+
     // Refresh relationship data to get updated followsYou and mutual counts
     try {
       const relResponse = await followsApi.getRelationship(userId);
@@ -240,12 +405,15 @@ async function handleFollowToggle() {
 
 async function handleLike(postId, button) {
   const isLiked = button.classList.contains('active');
-  const countEl = button.querySelector('.count');
-  const currentCount = parseInt(countEl.textContent) || 0;
+  const countEl = button.querySelector('.action-count');
+  const icon = button.querySelector('.action-icon');
+  const currentCount = Number.parseInt(countEl?.textContent || '0', 10) || 0;
 
   button.classList.toggle('active');
-  countEl.textContent = isLiked ? currentCount - 1 : currentCount + 1;
-  button.querySelector('svg').setAttribute('fill', isLiked ? 'none' : 'currentColor');
+  button.setAttribute('aria-pressed', String(!isLiked));
+  if (countEl) countEl.textContent = String(isLiked ? currentCount - 1 : currentCount + 1);
+  icon?.classList.toggle('ri-heart-3-fill', !isLiked);
+  icon?.classList.toggle('ri-heart-3-line', isLiked);
 
   try {
     if (isLiked) {
@@ -255,8 +423,10 @@ async function handleLike(postId, button) {
     }
   } catch (err) {
     button.classList.toggle('active');
-    countEl.textContent = currentCount;
-    button.querySelector('svg').setAttribute('fill', isLiked ? 'currentColor' : 'none');
+    button.setAttribute('aria-pressed', String(isLiked));
+    if (countEl) countEl.textContent = String(currentCount);
+    icon?.classList.toggle('ri-heart-3-fill', isLiked);
+    icon?.classList.toggle('ri-heart-3-line', !isLiked);
     showToast(err.message || 'Failed to update like', 'error');
   }
 }
@@ -265,17 +435,23 @@ function handleComment(postId) {
   window.location.href = appUrl(`post.html?id=${postId}`);
 }
 
+function handleEdit(postId) {
+  /*
+   * `editPostUrl` defaults `from` to the current page including
+   * its query string, so the editor returns the user to the same
+   * profile tab they left.
+   */
+
+  window.location.href = editPostUrl(postId);
+}
+
 async function handleDelete(postId) {
   if (!confirm('Are you sure you want to delete this post?')) return;
 
   try {
-    const response = await postsApi.delete(postId);
-    if (response.success) {
-      showToast('Post deleted', 'success');
-      loadTabContent();
-    } else {
-      showToast(response.error?.message || 'Failed to delete post', 'error');
-    }
+    await postsApi.delete(postId);
+    showToast('Post deleted', 'success');
+    loadTabContent();
   } catch (err) {
     showToast(err.message || 'Failed to delete post', 'error');
   }
@@ -301,4 +477,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   await auth.init();
   await loadProfile();
   setupInfiniteScroll();
+  consumePostEditedFlag();
 });

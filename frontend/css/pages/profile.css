@@ -112,6 +112,28 @@
   min-width: 112px;
 }
 
+/*
+ * Phase 02 upload triggers. Kept in one row so the absolutely
+ * positioned actions block does not grow tall enough to overlap the
+ * profile info on narrow viewports.
+ */
+.profile-media-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-xs);
+}
+
+.profile-media-btn {
+  gap: 0.35rem;
+  padding-inline: 0.75rem;
+  font-size: var(--font-size-xs);
+}
+
+.profile-media-btn i {
+  font-size: 16px;
+}
+
 .profile-tabs {
   position: sticky;
   top: 12px;
@@ -212,6 +234,12 @@
 
   .profile-actions .btn {
     width: 100%;
+  }
+
+  /* Below the mobile breakpoint the actions block is static and full
+     width, so the upload triggers stack instead of overflowing. */
+  .profile-media-actions {
+    flex-wrap: wrap;
   }
 
   .profile-tabs {
