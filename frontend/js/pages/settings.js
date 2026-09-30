@@ -3,6 +3,7 @@ import { usersApi } from '../api/index.js';
 import { showToast } from '../main.js';
 import { getInitials } from '../utils/format.js';
 import { appUrl } from '../utils/routes.js';
+import { resolveMediaSource } from '../utils/media.js';
 
 const settingsContainer = document.getElementById('settings-container');
 
@@ -32,6 +33,11 @@ async function loadSettings() {
 function renderSettings() {
   const profile = currentProfile.profile || {};
 
+  // An uploaded image and an external URL are two sources for the same
+  // slot, so the preview shows whichever is actually in use.
+  const avatarSrc = resolveMediaSource(profile.avatarMediaId, profile.avatarUrl);
+  const coverSrc = resolveMediaSource(profile.bannerMediaId, profile.coverUrl);
+
   settingsContainer.innerHTML = `
     <div class="settings-page">
       <h1 class="page-title">Settings</h1>
@@ -41,14 +47,14 @@ function renderSettings() {
         
         <div class="profile-preview">
           <div class="avatar-wrapper">
-            ${profile.avatarUrl
-      ? `<img src="${profile.avatarUrl}" alt="" class="avatar-preview" id="avatar-preview">`
+            ${avatarSrc
+      ? `<img src="${escapeHtml(avatarSrc)}" alt="" class="avatar-preview" id="avatar-preview">`
       : `<div class="avatar-preview" id="avatar-preview" style="display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; color: var(--color-primary);">${getInitials(profile.displayName || auth.user.username)}</div>`
     }
           </div>
           <div class="cover-wrapper">
-            ${profile.coverUrl
-      ? `<img src="${profile.coverUrl}" alt="" class="cover-preview" id="cover-preview">`
+            ${coverSrc
+      ? `<img src="${escapeHtml(coverSrc)}" alt="" class="cover-preview" id="cover-preview">`
       : `<div class="cover-preview" id="cover-preview" style="background: var(--color-bg-tertiary);"></div>`
     }
           </div>
@@ -192,14 +198,21 @@ function setupEventListeners() {
     e.preventDefault();
 
     const formData = new FormData(form);
+    const avatarUrl = formData.get('avatarUrl').trim();
+    const coverUrl = formData.get('coverUrl').trim();
+
     const data = {
       displayName: formData.get('displayName').trim(),
       bio: formData.get('bio').trim() || undefined,
-      avatarUrl: formData.get('avatarUrl').trim() || undefined,
-      coverUrl: formData.get('coverUrl').trim() || undefined,
       websiteUrl: formData.get('websiteUrl').trim() || undefined,
       location: formData.get('location').trim() || undefined,
     };
+
+    // Only sent when the field was actually filled in. An untouched,
+    // blank field must not clear an uploaded image — removing one is
+    // an explicit act, not a side effect of editing another field.
+    if (avatarUrl) data.avatarUrl = avatarUrl;
+    if (coverUrl) data.coverUrl = coverUrl;
 
     // Remove empty strings
     Object.keys(data).forEach(key => {
@@ -217,6 +230,7 @@ function setupEventListeners() {
       if (response.success) {
         showToast('Profile updated successfully', 'success');
         currentProfile = response.data;
+        auth.updateProfile(currentProfile.profile);
         renderSettings();
       } else {
         showToast(response.error?.message || 'Failed to update profile', 'error');
