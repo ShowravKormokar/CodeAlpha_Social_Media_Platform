@@ -8,7 +8,7 @@ export function $$(selector, context = document) {
 
 export function createElement(tag, attributes = {}, children = []) {
   const element = document.createElement(tag);
-  
+
   Object.entries(attributes).forEach(([key, value]) => {
     if (key === 'class') {
       element.className = value;
@@ -23,13 +23,13 @@ export function createElement(tag, attributes = {}, children = []) {
     }
   });
 
-  children.forEach(child => {
+  const childNodes = Array.isArray(children) ? children.flat(Infinity) : [children];
+
+  childNodes.forEach(child => {
     if (typeof child === 'string') {
       element.appendChild(document.createTextNode(child));
     } else if (child instanceof Node) {
       element.appendChild(child);
-    } else if (Array.isArray(child)) {
-      child.forEach(c => element.appendChild(c));
     }
   });
 
