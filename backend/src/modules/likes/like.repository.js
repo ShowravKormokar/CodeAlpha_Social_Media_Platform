@@ -30,7 +30,7 @@ export class LikeRepository {
   async getByPost(postId, { page = 1, limit = 20 }) {
     const offset = (page - 1) * limit;
     const query = `
-      SELECT pl.user_id, pl.created_at, u.username, pr.display_name, pr.avatar_url
+      SELECT pl.user_id, pl.created_at, u.username, pr.display_name, pr.avatar_url, pr.avatar_media_id
       FROM post_likes pl
       JOIN users u ON u.id = pl.user_id
       JOIN profiles pr ON pr.user_id = u.id

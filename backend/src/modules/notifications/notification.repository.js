@@ -30,7 +30,7 @@ export class NotificationRepository {
     }
 
     const query = `
-      SELECT n.*, u.username, pr.display_name, pr.avatar_url
+      SELECT n.*, u.username, pr.display_name, pr.avatar_url, pr.avatar_media_id
       FROM notifications n
       LEFT JOIN users u ON u.id = n.actor_id
       LEFT JOIN profiles pr ON pr.user_id = u.id

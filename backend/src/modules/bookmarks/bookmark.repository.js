@@ -30,7 +30,7 @@ export class BookmarkRepository {
     const offset = (page - 1) * limit;
     const query = `
       SELECT pb.post_id, pb.created_at, p.content, p.image_url, p.user_id,
-             u.username, pr.display_name, pr.avatar_url
+             u.username, pr.display_name, pr.avatar_url, pr.avatar_media_id
       FROM post_bookmarks pb
       JOIN posts p ON p.id = pb.post_id
       JOIN users u ON u.id = p.user_id

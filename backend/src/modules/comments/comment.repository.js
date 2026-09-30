@@ -4,7 +4,7 @@ import { NotFoundError } from '../../errors/AppError.js';
 export class CommentRepository {
   async findById(id, currentUserId = null) {
     const query = `
-      SELECT c.*, u.username, pr.display_name, pr.avatar_url
+      SELECT c.*, u.username, pr.display_name, pr.avatar_url, pr.avatar_media_id
       FROM comments c
       JOIN users u ON u.id = c.user_id
       JOIN profiles pr ON pr.user_id = u.id
@@ -48,7 +48,7 @@ export class CommentRepository {
     const offset = (page - 1) * limit;
 
     const query = `
-      SELECT c.*, u.username, pr.display_name, pr.avatar_url
+      SELECT c.*, u.username, pr.display_name, pr.avatar_url, pr.avatar_media_id
       FROM comments c
       JOIN users u ON u.id = c.user_id
       JOIN profiles pr ON pr.user_id = u.id

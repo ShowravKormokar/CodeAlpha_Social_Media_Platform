@@ -1,7 +1,7 @@
 const Feed = {
   description: 'Feed module uses Post and UserFollow models for generating personalized feeds',
   query: `
-    SELECT p.*, u.username, pr.display_name, pr.avatar_url,
+    SELECT p.*, u.username, pr.display_name, pr.avatar_url, pr.avatar_media_id,
            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes_count,
            (SELECT COUNT(*) FROM comments WHERE post_id = p.id AND deleted_at IS NULL) as comments_count,
            (SELECT 1 FROM post_likes WHERE post_id = p.id AND user_id = $1) as user_liked

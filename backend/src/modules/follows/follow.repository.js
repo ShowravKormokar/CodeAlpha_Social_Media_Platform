@@ -46,10 +46,10 @@ export class FollowRepository {
     const offset = (page - 1) * limit;
     let query;
     let queryParams;
-    
+
     if (currentUserId) {
       query = `
-        SELECT uf.follower_id, uf.created_at, u.username, pr.display_name, pr.avatar_url,
+        SELECT uf.follower_id, uf.created_at, u.username, pr.display_name, pr.avatar_url, pr.avatar_media_id,
                EXISTS(SELECT 1 FROM user_follows WHERE follower_id = $4 AND following_id = uf.follower_id) as is_following
         FROM user_follows uf
         JOIN users u ON u.id = uf.follower_id
@@ -61,7 +61,7 @@ export class FollowRepository {
       queryParams = [userId, limit, offset, currentUserId];
     } else {
       query = `
-        SELECT uf.follower_id, uf.created_at, u.username, pr.display_name, pr.avatar_url,
+        SELECT uf.follower_id, uf.created_at, u.username, pr.display_name, pr.avatar_url, pr.avatar_media_id,
                FALSE as is_following
         FROM user_follows uf
         JOIN users u ON u.id = uf.follower_id
@@ -95,10 +95,10 @@ export class FollowRepository {
     const offset = (page - 1) * limit;
     let query;
     let queryParams;
-    
+
     if (currentUserId) {
       query = `
-        SELECT uf.following_id, uf.created_at, u.username, pr.display_name, pr.avatar_url,
+        SELECT uf.following_id, uf.created_at, u.username, pr.display_name, pr.avatar_url, pr.avatar_media_id,
                EXISTS(SELECT 1 FROM user_follows WHERE follower_id = $4 AND following_id = uf.following_id) as is_following
         FROM user_follows uf
         JOIN users u ON u.id = uf.following_id
@@ -110,7 +110,7 @@ export class FollowRepository {
       queryParams = [userId, limit, offset, currentUserId];
     } else {
       query = `
-        SELECT uf.following_id, uf.created_at, u.username, pr.display_name, pr.avatar_url,
+        SELECT uf.following_id, uf.created_at, u.username, pr.display_name, pr.avatar_url, pr.avatar_media_id,
                FALSE as is_following
         FROM user_follows uf
         JOIN users u ON u.id = uf.following_id

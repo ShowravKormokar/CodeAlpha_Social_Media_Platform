@@ -95,6 +95,7 @@ export class CommentService {
         username: comment.username,
         displayName: comment.display_name,
         avatarUrl: comment.avatar_url,
+        avatarMediaId: comment.avatar_media_id,
       },
     };
   }
