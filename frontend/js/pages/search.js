@@ -4,6 +4,7 @@ import { showToast } from '../main.js';
 import { getInitials, formatRelativeTime, formatNumber } from '../utils/format.js';
 import { renderFollowerBadge, getFollowerBadge } from '../utils/followerBadge.js';
 import { appUrl } from '../utils/routes.js';
+import { resolveMediaSource } from '../utils/media.js';
 
 const searchPage = document.getElementById('search-page');
 
@@ -251,7 +252,7 @@ function renderUserCard(user) {
   const followsYou = user.followsYou || false;
   const mutualFollowersCount = user.mutualFollowersCount || 0;
   const displayName = profile.displayName || user.username;
-  const avatarUrl = profile.avatarUrl;
+  const avatarUrl = resolveMediaSource(profile.avatarMediaId, profile.avatarUrl);
   const bio = profile.bio;
   const followerBadge = user.followerBadge || getFollowerBadge(user.stats?.followers || 0);
 
@@ -266,7 +267,7 @@ function renderUserCard(user) {
   return `
     <article class="user-card" data-user-id="${user.id}" style="cursor: pointer;">
       <div class="user-card-avatar">
-        ${avatarUrl ? `<img src="${avatarUrl}" alt="">` : getInitials(displayName)}
+        ${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" alt="">` : getInitials(displayName)}
       </div>
       <div class="user-card-info">
         <div class="user-card-name">${escapeHtml(displayName)} ${badgeHtml}</div>

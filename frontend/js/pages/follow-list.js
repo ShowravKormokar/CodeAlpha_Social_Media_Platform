@@ -4,6 +4,7 @@ import { showToast } from '../main.js';
 import { getInitials, formatNumber } from '../utils/format.js';
 import { renderFollowerBadge, getFollowerBadge } from '../utils/followerBadge.js';
 import { appUrl } from '../utils/routes.js';
+import { resolveMediaSource } from '../utils/media.js';
 
 const followListPage = document.getElementById('follow-list-page');
 const pageTitle = document.getElementById('page-title');
@@ -212,8 +213,11 @@ function renderFollowUserCard(user) {
   const isFollowing = user.isFollowing || false;
   const followsYou = user.followsYou || false;
   const mutualFollowersCount = user.mutualFollowersCount || 0;
-  const displayName = profile.displayName || user.username;
-  const avatarUrl = profile.avatarUrl;
+  const displayName = profile.displayName || user.display_name || user.username;
+  const avatarUrl = resolveMediaSource(
+    profile.avatarMediaId || user.avatarMediaId || user.avatar_media_id,
+    profile.avatarUrl || profile.avatar_url || user.avatar_url || user.avatarUrl
+  );
   const bio = profile.bio;
   const followerBadge = user.followerBadge || getFollowerBadge(user.stats?.followers || 0);
 
@@ -231,7 +235,7 @@ function renderFollowUserCard(user) {
   return `
     <article class="follow-user-card" data-user-id="${user.id}" style="cursor: pointer;">
       <div class="follow-user-avatar">
-        ${avatarUrl ? `<img src="${avatarUrl}" alt="">` : getInitials(displayName)}
+        ${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" alt="">` : getInitials(displayName)}
       </div>
       <div class="follow-user-info">
         <div class="follow-user-name">${escapeHtml(displayName)} ${badgeHtml}</div>

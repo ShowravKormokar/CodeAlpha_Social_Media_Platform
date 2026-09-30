@@ -2,9 +2,11 @@ import { auth } from '../state/auth.js';
 import { postsApi, commentsApi, likesApi } from '../api/index.js';
 import { normalizePost } from '../components/PostCard.js';
 import { Comment } from '../components/Comment.js';
-import { showToast } from '../main.js';
-import { formatRelativeTime, getInitials } from '../utils/format.js';
-import { appUrl } from '../utils/routes.js';
+import { showToast, consumePostEditedFlag } from '../main.js';
+import { formatRelativeTime } from '../utils/format.js';
+import { appUrl, editPostUrl } from '../utils/routes.js';
+import { mediaApi } from '../api/media.api.js';
+import { getAvatarMarkup } from '../utils/media.js';
 
 const postDetailContainer = document.getElementById('post-detail');
 const commentsSection = document.getElementById('comments-section');
@@ -59,8 +61,11 @@ function renderPost() {
     currentPost.author?.username ||
     'user';
 
-  const avatar =
-    getInitials(authorName);
+  const avatar = getAvatarMarkup({
+    name: authorName,
+    mediaId: currentPost.author?.avatarMediaId || currentPost.author?.avatar_media_id,
+    fallbackUrl: currentPost.author?.avatarUrl || currentPost.author?.avatar_url
+  });
 
   const likesCount =
     Number(currentPost.likes_count) || 0;
@@ -79,6 +84,13 @@ function renderPost() {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;')
       .replace(/\n/g, '<br>');
+
+  // An uploaded image is referenced by media id and served through the
+  // media content endpoint; an external URL is used as-is.
+  const postImageSrc =
+    currentPost.image_media_id
+      ? mediaApi.getContentUrl(currentPost.image_media_id)
+      : currentPost.image_url || '';
 
   const edited =
     currentPost.updated_at &&
@@ -214,12 +226,12 @@ function renderPost() {
           ${content}
         </div>
 
-        ${currentPost.image_url
+        ${postImageSrc
       ? `
               <div class="post-media">
 
                 <img
-                  src="${currentPost.image_url}"
+                  src="${postImageSrc}"
                   alt="Image shared by ${authorName}"
                   class="post-image"
                 >
@@ -545,11 +557,11 @@ function renderCommentsHeader() {
           class="avatar avatar-sm"
           aria-hidden="true"
         >
-          ${getInitials(
-    auth.user?.name ||
-    auth.user?.username ||
-    'U'
-  )}
+          ${getAvatarMarkup({
+    name: auth.user?.profile?.displayName || auth.user?.username,
+    mediaId: auth.user?.profile?.avatarMediaId,
+    fallbackUrl: auth.user?.profile?.avatarUrl
+  })}
         </span>
 
         <textarea
@@ -723,37 +735,22 @@ async function handleDelete(postId) {
   if (!confirm('Are you sure you want to delete this post?')) return;
 
   try {
-    const response = await postsApi.delete(postId);
-    if (response.success) {
-      showToast('Post deleted', 'success');
-      window.location.href = appUrl('feed.html');
-    } else {
-      showToast(response.error?.message || 'Failed to delete post', 'error');
-    }
+    await postsApi.delete(postId);
+    showToast('Post deleted', 'success');
+    window.location.href = appUrl('feed.html');
   } catch (err) {
     showToast(err.message || 'Failed to delete post', 'error');
   }
 }
 
 function handleEdit(postId) {
-  const newContent = prompt('Edit your post:', currentPost.content);
-  if (newContent && newContent !== currentPost.content) {
-    updatePost(postId, newContent);
-  }
-}
+  /*
+   * Hand off to the dedicated editor instead of editing inline.
+   * It returns here after a successful save, where the post is
+   * re-read from the API.
+   */
 
-async function updatePost(postId, content) {
-  try {
-    const response = await postsApi.update(postId, { content });
-    if (response.success) {
-      showToast('Post updated', 'success');
-      loadPost();
-    } else {
-      showToast(response.error?.message || 'Failed to update post', 'error');
-    }
-  } catch (err) {
-    showToast(err.message || 'Failed to update post', 'error');
-  }
+  window.location.href = editPostUrl(postId);
 }
 
 async function handleDeleteComment(commentId) {
@@ -850,4 +847,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadPost();
   setupCommentForm();
   setupAutoResize();
+  consumePostEditedFlag();
 });
