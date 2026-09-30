@@ -1,458 +1,115 @@
+Below is a finalized, cleaner `README.md` that incorporates the original project scope plus the engineering-focused additions you completed, especially **secure image upload, sanitization/re-encoding, media abstraction, Dockerization, authentication, social graph, consistency, and maintainability**. I kept it focused enough to be a real GitHub README rather than a full requirements document.  
+
+````md
 # Social Media Platform
 
-A mini full-stack social media platform built with **HTML, CSS, JavaScript, Express.js, and PostgreSQL**.
+A full-stack mini social media platform built with **HTML, CSS, Vanilla JavaScript, Node.js, Express.js, and PostgreSQL**.
 
-The project starts from a simple social-media assignment—users, profiles, posts, comments, likes, and follows—but is designed with **intermediate-level implementation and senior-level engineering principles** in mind.
+This project was developed as **Task 02 of the CodeAlpha Full Stack Software Development Internship**.
 
-The goal is not to build a production-scale social network. Instead, this project provides a strong foundation that can evolve toward one by applying clean architecture, modular design, secure authentication, relational data modeling, transactional consistency, validation, pagination, centralized error handling, testing, and API versioning.
+The original assignment focuses on users, profiles, posts, comments, likes, and follows. Instead of implementing only the minimum requirements, this project was developed with a stronger engineering mindset around **security, maintainability, data consistency, modular architecture, validation, pagination, transactions, and scalable design**.
 
----
-
-## 1. What Is This Project?
-
-The **Social Media Platform** is a web application where users can:
-
-* Create an account and authenticate securely.
-* Manage their profile.
-* Create, edit, and delete posts.
-* View posts from other users.
-* Like and unlike posts.
-* Comment on posts.
-* Follow and unfollow other users.
-* View followers and following lists.
-* View user profiles and their posts.
-* Browse a personalized feed.
-* Search for users and posts.
-* Receive basic notifications for social interactions.
-
-The application is divided into two independently structured applications:
-
-```text
-CodeAlpha_Social_Media_Platform/
-├── backend/
-└── frontend/
-```
-
-The frontend communicates with the backend exclusively through a RESTful API.
+> The goal is not to claim production-scale infrastructure. The goal is to demonstrate how a small application can be designed with principles that make future scaling easier.
 
 ---
 
-# Quick Start with Docker
+## ✨ Features
 
-The whole stack — PostgreSQL, migrations, the Express API, and the static
-frontend — starts with a single command.
+### 🔐 Authentication & Authorization
 
-## Prerequisites
+- User registration
+- Login / logout
+- Current-user session
+- Password hashing with bcrypt
+- JWT-based authentication
+- Access / refresh token mechanism
+- HTTP-only authentication cookies
+- Secure cookie configuration
+- Authentication middleware
+- Authorization and ownership checks
+- Rate limiting on sensitive endpoints
+- Input validation
 
-```text
-Docker Engine    24+
-Docker Compose   v2 (the `docker compose` command, not `docker-compose`)
-```
-
-Verify:
-
-```bash
-docker --version
-docker compose version
-```
-
-## Start the stack
-
-```bash
-cp .env.example .env      # Windows: copy .env.example .env
-docker compose up -d
-```
-
-The first run builds both images, which takes a few minutes. Later runs reuse
-the Docker layer cache.
-
-## Open the application
-
-| Service         | URL                            |
-| --------------- | ------------------------------ |
-| Frontend (nginx) | http://localhost:5500           |
-| API health check | http://localhost:5000/health    |
-| API base URL     | http://localhost:5000/api/v1    |
-
-The frontend calls the API on the host port directly, so no configuration is
-needed to browse the app locally.
-
-## What happens on startup
-
-Startup order is enforced by health-gated dependencies, so the API never starts
-against an unmigrated database:
-
-```text
-db (PostgreSQL)      healthy after `pg_isready` succeeds
-   ↓
-migrate             runs `node src/database/migrate.js`, then exits 0
-   ↓
-api                 starts only if migrations completed successfully
-   ↓
-frontend            starts only once the API reports healthy
-```
-
-If a migration fails, the `api` service never starts. Check why with:
-
-```bash
-docker compose logs migrate
-```
-
-## Common commands
-
-```bash
-# Follow all logs
-docker compose logs -f
-
-# Logs for one service
-docker compose logs -f api
-
-# Service status
-docker compose ps
-
-# Rebuild after a code change
-docker compose up -d --build
-
-# Stop containers (database data is preserved)
-docker compose down
-
-# Stop and delete the database volume  (destroys all data)
-docker compose down -v
-```
-
-## Seeding demo data
-
-Seeding is **never** automatic, so a fresh volume is never polluted and
-restarting the stack never duplicates content. Run it explicitly when you want
-demo data:
-
-```bash
-docker compose run --rm migrate npm run db:seed
-```
-
-> **Note**
-> The seed script is only partially idempotent. Users and profiles are upserted,
-> but posts and comments are appended, so running it more than once creates
-> duplicates.
-
-## Accessing the database
-
-PostgreSQL is intentionally **not** published to the host, which keeps the
-port free and avoids exposing the database outside the Compose network. Use an
-exec session instead:
-
-```bash
-# psql shell
-docker compose exec db psql -U postgres -d social_media
-
-# Or use psql inside the API container
-docker compose exec api node -e "..."
-```
-
-## Running tests
-
-```bash
-docker compose run --rm api npm test
-```
-
-The test run uses the `db` service already defined in the Compose file, so no
-extra configuration is required.
-
-## Configuration
-
-Every setting lives in the root `.env` file. See [`.env.example`](.env.example)
-for the full list. The most commonly changed values:
-
-| Variable         | Default                  | Purpose                                  |
-| ---------------- | ------------------------ | ---------------------------------------- |
-| `FRONTEND_PORT`  | `5500`                   | Host port for the static frontend        |
-| `API_PORT`       | `5000`                   | Host port for the Express API            |
-| `POSTGRES_DB`    | `social_media`           | Database name created in the container   |
-| `POSTGRES_USER`  | `postgres`               | Database user                            |
-| `POSTGRES_PASSWORD` | `postgres`            | Database password (development only)     |
-| `CORS_ORIGIN`    | `http://localhost:5500`  | Must match the frontend URL you open     |
-| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | dev placeholders | Replace in any real deployment |
-
-`DATABASE_URL` is assembled automatically by `docker-compose.yml` from the
-values above and points at the `db` service on the internal Docker network, so
-it never needs to reference `localhost` from inside a container.
-
-After editing `.env`, apply the change:
-
-```bash
-docker compose up -d
-```
-
-## Development without Docker
-
-Docker is optional. The application also runs directly on Node.js and a local
-PostgreSQL instance — see the software requirements in [Section 6](#6-requirements).
-Use `backend/.env` for the local configuration in that case.
+Authentication credentials are intentionally **not stored in `localStorage` or `sessionStorage`**.
 
 ---
 
-# 2. Objective
+### 👤 User Profiles
 
-The primary objective is to build a **maintainable and extensible social-media application** while practicing real-world software engineering concepts.
-
-### Core objectives
-
-* Build a complete full-stack application.
-* Design a normalized relational database.
-* Implement secure authentication.
-* Implement authorization and ownership checks.
-* Design clean REST APIs.
-* Practice modular Express.js architecture.
-* Use transactions where multiple database operations must succeed or fail together.
-* Implement cursor/offset pagination where appropriate.
-* Implement centralized error handling.
-* Separate controllers, services, repositories, models, validation, and routes.
-* Write unit, integration, and API tests.
-* Establish consistent API response formats.
-* Prepare the architecture for future scaling.
-
-### Engineering objectives
-
-The project should demonstrate understanding of:
-
-* Separation of concerns.
-* Dependency inversion.
-* DRY principles.
-* SOLID principles where appropriate.
-* Database normalization.
-* Indexing.
-* Transactions.
-* Connection pooling.
-* Authentication vs authorization.
-* API versioning.
-* Input validation.
-* Rate limiting.
-* Security headers.
-* Logging and observability.
-* Testing.
-* Configuration management.
-* Database migrations.
-* Seed data.
-* Graceful error handling.
+- View user profiles
+- Edit profile information
+- Profile picture
+- Profile banner
+- Follower count
+- Following count
+- User posts
+- Follow / unfollow state
+- Followers and following
+- User search
 
 ---
 
-# 3. Features
+### 📝 Posts
 
-The original assignment requires:
-
-> User profiles, posts & comments, and like/follow system.
-
-The project expands these into a more complete social-media foundation.
-
----
-
-## 3.1 Authentication
-
-### Registration
-
-Users can create an account using:
-
-* Name
-* Username
-* Email
-* Password
-
-Requirements:
-
-* Email must be unique.
-* Username must be unique.
-* Password must never be stored as plaintext.
-* Password must be hashed using `bcrypt`.
-* Input must be validated.
-* Duplicate accounts must return appropriate errors.
-
-### Login
-
-Users authenticate using:
-
-```text
-Email/Username + Password
-```
-
-Authentication is handled using **HTTP-only cookies**.
-
-The frontend must not store authentication tokens in:
-
-```text
-localStorage
-sessionStorage
-```
-
-### Logout
-
-Logout should:
-
-* Invalidate the authentication session/token.
-* Clear the authentication cookie.
-* Return a successful response.
-
-### Authentication requirements
-
-* HTTP-only cookie
-* Secure cookie in production
-* SameSite protection
-* Password hashing
-* Authentication middleware
-* Authorization middleware
-* Rate limiting on authentication endpoints
+- Create posts
+- Edit own posts
+- Delete own posts
+- View posts
+- Personalized feed
+- Pagination
+- Infinite scrolling
+- Optional post images
+- Post ownership validation
+- Post metadata
+- Like and comment counts
 
 ---
 
-# 3.2 User Profiles
+### 💬 Comments
 
-Each user has a profile containing:
+- Create comments
+- View comments
+- Update own comments
+- Delete own comments
+- Comment counts
+- Comment ownership validation
 
-* Profile picture
-* Cover image
-* Display name
-* Username
-* Bio
-* Website
-* Location
-* Joined date
-
-Profile functionality:
-
-* View profile
-* Edit profile
-* Change profile picture
-* Change password
-* View user's posts
-* View follower count
-* View following count
-* Follow/unfollow user
-
-Future extension:
-
-* Account privacy
-* Private profiles
-* Profile verification
-* User blocking
+The current implementation keeps comments intentionally simple and maintainable rather than introducing unnecessary nested-comment complexity.
 
 ---
 
-# 3.3 Posts
+### ❤️ Likes
 
-Authenticated users can create posts.
+- Like a post
+- Unlike a post
+- Like count
+- Current-user like state
+- Duplicate-like protection
 
-A post may contain:
-
-* Text content
-* Optional image
-* Created timestamp
-* Updated timestamp
-* Author
-
-Operations:
-
-```text
-Create post
-Get post
-Get posts
-Update own post
-Delete own post
-```
-
-Users must only be able to modify or delete their own posts unless an administrative permission exists.
-
-### Post metadata
-
-Each post should expose:
-
-```text
-author
-createdAt
-updatedAt
-likeCount
-commentCount
-```
-
-Counts should not require inefficient queries for every individual post.
-
----
-
-# 3.4 Comments
-
-Users can comment on posts.
-
-Operations:
-
-```text
-Create comment
-Get comments
-Update own comment
-Delete own comment
-```
-
-Comments should include:
-
-* Author
-* Content
-* Post
-* Created timestamp
-* Updated timestamp
-
-Future extension:
-
-```text
-Nested comments
-Comment likes
-Comment replies
-Comment mentions
-```
-
-For the first version, comments should remain **one level deep**.
-
----
-
-# 3.5 Like System
-
-Users can:
-
-* Like a post.
-* Unlike a post.
-* Check whether they liked a post.
-
-Important database rule:
-
-A user must not be able to like the same post multiple times.
-
-Therefore:
+The database enforces uniqueness for a user/post relationship:
 
 ```text
 UNIQUE(user_id, post_id)
-```
+````
 
-should be enforced at the database level.
-
-This prevents duplicate likes even when multiple requests arrive concurrently.
+This means application logic is not the only protection against duplicate likes.
 
 ---
 
-# 3.6 Follow System
+### 🤝 Follow System
 
-Users can:
+* Follow users
+* Unfollow users
+* Followers
+* Following
+* Follow state
+* Mutual relationship information
+* Follower counts
+* Following counts
+* Self-follow prevention
+* Duplicate-follow prevention
 
-* Follow another user.
-* Unfollow another user.
-* View followers.
-* View following.
-* Check whether they follow another user.
-
-Important rules:
-
-```text
-A user cannot follow themselves.
-A user cannot follow the same user twice.
-```
-
-Database constraint:
+The database also protects the relationship:
 
 ```text
 UNIQUE(follower_id, following_id)
@@ -460,250 +117,725 @@ UNIQUE(follower_id, following_id)
 
 ---
 
-# 3.7 Feed
+# 🖼️ Secure Image & Media System
 
-Authenticated users should have a feed.
+One of the project's main engineering additions is a reusable image-management system.
 
-The initial feed can contain posts from:
+Images can be used for:
 
-* Users they follow.
-* Optionally their own posts.
+* Profile pictures
+* Profile banners
+* Post images
 
-Example:
+The system was designed around the principle:
+
+> **Never trust user-uploaded files.**
+
+A file called `photo.jpg` is not automatically a safe image.
+
+### Upload pipeline
 
 ```text
-GET /api/v1/feed
+User
+  │
+  ▼
+Frontend Upload UI
+  │
+  ├── File type check
+  ├── File size check
+  └── Image preview
+  │
+  ▼
+Express API
+  │
+  ▼
+Multer
+  │
+  ▼
+Server-side validation
+  │
+  ▼
+Sharp
+  │
+  ├── Decode image
+  ├── Validate image
+  ├── Resize when required
+  ├── Strip metadata
+  └── Re-encode
+  │
+  ▼
+Safe generated storage key
+  │
+  ▼
+Local Media Storage
+  │
+  ▼
+PostgreSQL Media Metadata
 ```
 
-Posts should be ordered using:
+### Security measures
+
+The media system includes:
+
+* Supported-format allowlist
+* JPEG / PNG / WebP support
+* File-size limits
+* Server-side file validation
+* Actual image decoding
+* Sharp-based re-encoding
+* Metadata stripping
+* Server-generated UUID storage keys
+* Path traversal protection
+* No user-controlled filesystem paths
+* No original filenames used as storage paths
+* Uploaded files stored outside application source code
+* Uploaded files are not served as executable application content
+* Ownership validation
+* Controlled media serving
+* PostgreSQL stores metadata rather than binary image data
+
+### Media architecture
 
 ```text
-created_at DESC
+Profile / Post
+      │
+      ▼
+  MediaService
+      │
+      ▼
+StorageProvider
+      │
+      ▼
+LocalStorageProvider
 ```
 
-The feed should support pagination.
+The application stores a `storage_key` rather than coupling business logic to a physical filesystem path.
+
+This allows the storage implementation to evolve later:
+
+```text
+StorageProvider
+   ├── LocalStorageProvider
+   └── S3 / Cloudflare R2 (future)
+```
+
+### Media database concept
+
+```text
+media
+├── id
+├── owner_id
+├── media_type
+├── storage_key
+├── mime_type
+├── size
+├── width
+├── height
+├── created_at
+└── updated_at
+```
+
+PostgreSQL stores the **relationship and metadata**.
+
+The actual image remains in media storage.
 
 ---
 
-# 3.8 Search
+## 🧩 Image Upload Experience
 
-Basic search should support:
-
-### Users
+The frontend provides a reusable upload experience for different media types.
 
 ```text
-GET /api/v1/users/search?q=showrav
+Select image
+     ↓
+Preview
+     ↓
+Upload
+     ↓
+Uploading 45%
+     ↓
+Processing & verifying
+     ↓
+Completed
 ```
 
-Search by:
+Supported interactions include:
 
-* Username
-* Display name
+* Click to upload
+* Drag and drop
+* Image preview
+* File information
+* Upload progress
+* Processing state
+* Success state
+* Error state
+* Retry
+* Cancel/remove
+* Responsive modal
+* Keyboard accessibility
 
-### Posts
-
-Optional future functionality:
+The same upload mechanism is reused for:
 
 ```text
-GET /api/v1/posts/search?q=javascript
+Profile Picture
+Profile Banner
+Post Image
 ```
+
+Frontend validation improves UX, while **backend validation remains the security boundary**.
 
 ---
 
-# 3.9 Notifications
+# 🏗️ Architecture
 
-Basic notification support is recommended because it is a common social-media feature.
-
-Examples:
+The project uses a layered and modular backend architecture.
 
 ```text
-User A followed you.
-User B liked your post.
-User C commented on your post.
+Client
+  │
+  ▼
+REST API
+  │
+  ▼
+Routes
+  │
+  ▼
+Middleware
+  │
+  ├── Authentication
+  ├── Authorization
+  ├── Validation
+  └── Security
+  │
+  ▼
+Controllers
+  │
+  ▼
+Services
+  │
+  ▼
+Repositories
+  │
+  ▼
+PostgreSQL
 ```
 
-Notification types:
+Supporting infrastructure includes:
 
 ```text
-FOLLOW
-LIKE
-COMMENT
+Configuration
+Database
+Migrations
+Validation
+Error Handling
+Logging
+Authentication
+Storage
+Media Processing
+Testing
 ```
 
-Operations:
+The frontend is intentionally kept framework-free:
 
 ```text
-Get notifications
-Mark notification as read
-Mark all notifications as read
+HTML
+  ↓
+CSS
+  ↓
+Vanilla JavaScript
+  ↓
+REST API
 ```
+
+This keeps the project focused on understanding the underlying web architecture rather than hiding complexity behind a frontend framework.
 
 ---
 
-# 3.10 Additional Recommended Features
+# 🛠️ Technology Stack
 
-These are not required for the initial implementation but should be considered in the architecture.
+## Frontend
 
-### User blocking
+* HTML5
+* CSS3
+* Vanilla JavaScript
+* Fetch API
+* Remix Icon
 
-```text
-Block user
-Unblock user
-```
+## Backend
 
-### Post reporting
+* Node.js
+* Express.js
+* JavaScript
+* REST API
 
-```text
-Report post
-```
+## Database
 
-### User reporting
+* PostgreSQL
+* `pg`
 
-```text
-Report user
-```
-
-### Bookmarks
-
-Users can save posts.
-
-### Hashtags
-
-Example:
+PostgreSQL was selected because the application's data is highly relational:
 
 ```text
-#javascript
-#nodejs
-#postgresql
+Users
+ ├── Posts
+ │    ├── Comments
+ │    └── Likes
+ │
+ └── Followers / Following
 ```
 
-### Mentions
+The project therefore benefits from:
 
-Example:
-
-```text
-@showrav
-```
-
-### Admin functionality
-
-Future administrative capabilities:
-
-* Manage users
-* Delete inappropriate posts
-* Review reports
-* Suspend accounts
-* View platform statistics
-
----
-
-# 4. Functional Requirements
-
-## Authentication
-
-* User registration
-* User login
-* User logout
-* Current-user endpoint
-* Password hashing
-* Authentication middleware
-
-## Users
-
-* View profile
-* Update profile
-* Search users
-* View followers
-* View following
-
-## Posts
-
-* Create post
-* Get post
-* Get posts
-* Update post
-* Delete post
-
-## Comments
-
-* Create comment
-* Get comments
-* Update comment
-* Delete comment
-
-## Social graph
-
-* Follow
-* Unfollow
-* Followers
-* Following
-
-## Engagement
-
-* Like
-* Unlike
-* Like count
-* Comment count
-
-## Feed
-
-* Personalized feed
-* Pagination
-
----
-
-# 5. Non-Functional Requirements
-
-The application should prioritize:
-
-### Security
-
-* HTTP-only authentication cookies
-* Password hashing
-* Input validation
-* SQL injection protection
-* CORS configuration
-* CSRF considerations
-* Rate limiting
-* Security headers
-* Secure cookie configuration
-
-### Performance
-
-* Database indexes
-* Connection pooling
-* Pagination
-* Efficient joins
-* Avoid N+1 queries
-* Appropriate query projections
-* Cached counters where justified
-
-### Maintainability
-
-* Modular architecture
-* Clear naming
-* Small focused services
-* Centralized errors
-* Consistent API responses
-* Automated testing
-* Environment-based configuration
-
-### Reliability
-
-* Database transactions
 * Foreign keys
 * Unique constraints
-* Graceful shutdown
-* Database connection handling
-* Request validation
+* Transactions
+* JOINs
+* Indexes
+* Referential integrity
+* Connection pooling
+* Relational consistency
+
+## Authentication & Security
+
+* JWT
+* HTTP-only cookies
+* bcrypt
+* Helmet
+* CORS
+* Rate limiting
+* Input validation
+
+## Image Processing
+
+* Multer
+* Sharp
+
+## Infrastructure
+
+* Docker
+* Docker Compose
+* Nginx
+* PostgreSQL container
 
 ---
 
-# 6. Requirements
+# 🔒 Security & Engineering Principles
 
-## Software
+Security was treated as a cross-cutting concern rather than something added only at the end.
 
-Recommended:
+### Authentication
+
+* HTTP-only cookies
+* Secure cookies in production
+* SameSite protection
+* Password hashing
+* Access/refresh authentication
+* Authentication middleware
+
+### Authorization
+
+The server determines ownership.
+
+For example:
+
+```text
+Client → "I want to edit user 123"
+             ↓
+Server checks authenticated user
+             ↓
+Server verifies ownership
+             ↓
+Allow / Reject
+```
+
+The frontend is never treated as the authority for permissions.
+
+### Input Validation
+
+User-controlled input is validated before reaching business logic.
+
+### Database Integrity
+
+Important relationships are protected with:
+
+* Foreign keys
+* Unique constraints
+* Transactions
+* Appropriate indexes
+
+### SQL Safety
+
+Database access uses parameterized queries rather than directly concatenating user input into SQL.
+
+### Image Safety
+
+Uploaded images are:
+
+```text
+Validated
+   ↓
+Decoded
+   ↓
+Processed
+   ↓
+Re-encoded
+   ↓
+Stored safely
+```
+
+The system does not rely only on a `.jpg` extension or browser-provided MIME type.
+
+---
+
+# ⚡ Performance Considerations
+
+The project applies several practical performance principles:
+
+* PostgreSQL connection pooling
+* Database indexes
+* Pagination
+* Infinite scrolling
+* Efficient joins
+* Query projections
+* Avoiding unnecessary N+1 queries
+* Server-side pagination
+* Optimized image dimensions
+* Lazy image loading where appropriate
+* Controlled upload sizes
+
+The architecture is intentionally designed so performance optimizations can be introduced without rewriting the entire application.
+
+---
+
+# 🔄 Data Consistency
+
+A major engineering focus is keeping related operations consistent.
+
+For example, a follow operation should not simply depend on frontend state.
+
+```text
+User clicks Follow
+       ↓
+Backend authentication
+       ↓
+Validate target
+       ↓
+Check business rules
+       ↓
+Database constraint
+       ↓
+Create relationship
+       ↓
+Return authoritative state
+```
+
+Similarly, likes and follows use database-level uniqueness to protect against concurrent duplicate requests.
+
+For operations involving multiple related database changes, transactions are used where atomicity is required.
+
+---
+
+# 🐳 Docker
+
+The complete application can be started using Docker Compose.
+
+### Requirements
+
+```text
+Docker Engine 24+
+Docker Compose v2
+```
+
+### Start
+
+```bash
+cp .env.example .env
+docker compose up -d
+```
+
+On Windows:
+
+```powershell
+copy .env.example .env
+docker compose up -d
+```
+
+### Services
+
+| Service  | URL                            |
+| -------- | ------------------------------ |
+| Frontend | `http://localhost:5500`        |
+| API      | `http://localhost:5000`        |
+| Health   | `http://localhost:5000/health` |
+| API v1   | `http://localhost:5000/api/v1` |
+
+### Startup flow
+
+```text
+PostgreSQL
+    ↓
+Health Check
+    ↓
+Database Migration
+    ↓
+Express API
+    ↓
+Frontend
+```
+
+The API waits for the database and migration process before starting.
+
+### Common commands
+
+```bash
+# Start
+docker compose up -d
+
+# Start and rebuild
+docker compose up -d --build
+
+# View services
+docker compose ps
+
+# View logs
+docker compose logs -f
+
+# API logs
+docker compose logs -f api
+
+# Stop
+docker compose down
+
+# Stop and remove database volume
+# WARNING: destroys development database data
+docker compose down -v
+```
+
+### Tests
+
+```bash
+docker compose run --rm api npm test
+```
+
+---
+
+# ⚙️ Configuration
+
+Configuration is environment-based.
+
+Create:
+
+```text
+.env
+```
+
+from:
+
+```text
+.env.example
+```
+
+Important configuration includes:
+
+```env
+FRONTEND_PORT=5500
+API_PORT=5000
+
+POSTGRES_DB=social_media
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+
+CORS_ORIGIN=http://localhost:5500
+
+JWT_ACCESS_SECRET=change-me
+JWT_REFRESH_SECRET=change-me
+
+MEDIA_STORAGE_PROVIDER=local
+MEDIA_UPLOAD_DIR=/app/storage/uploads
+MEDIA_MAX_FILE_SIZE=8388608
+```
+
+> Never use development secrets in a real deployment.
+
+Uploaded media is stored in a dedicated Docker volume outside the application source directory and is served through the API rather than exposed as static application content.
+
+---
+
+# 🗄️ Database
+
+The project uses PostgreSQL with migration-based schema management.
+
+Core relationships include:
+
+```text
+users
+  │
+  ├── profiles
+  ├── posts
+  │     ├── comments
+  │     ├── likes
+  │     └── media
+  │
+  ├── followers / following
+  │
+  └── media
+```
+
+Database design emphasizes:
+
+* Normalization
+* Foreign keys
+* Unique constraints
+* Indexes
+* Transactions
+* Referential integrity
+* Consistent relationships
+
+---
+
+# 🧪 Testing
+
+Testing focuses on business rules and security-sensitive behavior.
+
+Areas include:
+
+* Authentication
+* Authorization
+* User operations
+* Posts
+* Comments
+* Likes
+* Follows
+* Validation
+* Database behavior
+* Media uploads
+* Image validation
+* Image processing
+* Ownership checks
+* Error handling
+
+Run:
+
+```bash
+npm test
+```
+
+or through Docker:
+
+```bash
+docker compose run --rm api npm test
+```
+
+---
+
+# 📁 Project Structure
+
+The exact structure may evolve, but the project is organized around clear application responsibilities.
+
+```text
+CodeAlpha_Social_Media_Platform/
+│
+├── backend/
+│   ├── src/
+│   │   ├── config/
+│   │   ├── controllers/
+│   │   ├── database/
+│   │   ├── middleware/
+│   │   ├── repositories/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   ├── validation/
+│   │   └── ...
+│   │
+│   ├── docs/
+│   │   └── IMAGEPLAN.md
+│   │
+│   ├── tests/
+│   └── ...
+│
+├── frontend/
+│   ├── css/
+│   ├── js/
+│   ├── pages/
+│   └── ...
+│
+├── docker-compose.yml
+├── Dockerfile
+├── .env.example
+├── .dockerignore
+├── .gitignore
+└── README.md
+```
+
+The implementation follows separation of concerns rather than placing all application logic inside route handlers.
+
+---
+
+# 🔌 API
+
+API versioning begins at:
+
+```text
+/api/v1
+```
+
+Typical resource groups include:
+
+```text
+/api/v1/auth
+/api/v1/users
+/api/v1/posts
+/api/v1/comments
+/api/v1/likes
+/api/v1/follows
+/api/v1/media
+```
+
+The exact available endpoints should be treated according to the current backend implementation and API documentation.
+
+---
+
+# 🖼️ Media API
+
+Image uploads are handled through:
+
+```text
+POST /api/v1/media
+```
+
+using:
+
+```text
+multipart/form-data
+```
+
+Supported media purposes:
+
+```text
+profile_avatar
+profile_banner
+post_image
+```
+
+The backend determines the authenticated owner from the authentication context.
+
+The client does not control:
+
+```text
+owner_id
+storage path
+filesystem location
+```
+
+---
+
+# 🚀 Development Without Docker
+
+Docker is optional.
+
+The project can also be run directly using Node.js and PostgreSQL.
+
+Requirements:
 
 ```text
 Node.js >= 20
@@ -713,1816 +845,226 @@ Git
 Modern browser
 ```
 
-Optional:
+Install backend dependencies:
+
+```bash
+cd backend
+npm install
+```
+
+Configure:
 
 ```text
-Docker
-Docker Compose
-Postman / Bruno / Insomnia
+backend/.env
 ```
+
+Then run the migration system and start the backend according to the project's npm scripts.
+
+Start the frontend using the project's configured static server/development workflow.
 
 ---
 
-# 7. Technology Stack
+# 🌱 Seed Data
 
-## Frontend
+Development seed data can be executed explicitly.
 
-```text
-HTML5
-CSS3
-Vanilla JavaScript
-Fetch API
+With Docker:
+
+```bash
+docker compose run --rm migrate npm run db:seed
 ```
 
-The frontend intentionally uses vanilla technologies because the objective is to understand the underlying web architecture rather than hide complexity behind a frontend framework.
+Seeding is intentionally not automatic during normal startup.
+
+This avoids unexpectedly modifying development data every time the application starts.
 
 ---
 
-## Backend
+# 📌 Engineering Decisions
 
-```text
-Node.js
-Express.js
-JavaScript
-```
-
----
-
-## Database
-
-### PostgreSQL
-
-PostgreSQL is the selected database.
+This project intentionally demonstrates several practical engineering decisions.
 
 ### Why PostgreSQL?
 
-The application's core data is highly relational:
+Because the domain contains many relational relationships and requires strong consistency.
+
+### Why Vanilla JavaScript?
+
+To understand browser APIs, DOM manipulation, HTTP communication, state handling, and frontend architecture without depending on a framework.
+
+### Why layered Express architecture?
+
+To separate:
 
 ```text
-User
- ↓
-Posts
- ↓
-Comments
- ↓
-Likes
-
-User
- ↓
-Followers / Following
+HTTP concerns
+Business logic
+Data access
+Infrastructure
 ```
 
-The database needs strong guarantees for:
+### Why database constraints?
 
-* Unique usernames
-* Unique emails
-* Unique likes
-* Unique follows
-* Foreign-key relationships
-* Transactional operations
-* Referential integrity
-* Consistent counters
+Because application-level checks alone are insufficient when concurrent requests can reach the database.
 
-PostgreSQL provides these capabilities naturally.
+### Why HTTP-only cookies?
 
-MongoDB could work for this application, but PostgreSQL is preferred because the project's primary goal is also to practice **relational data modeling, transactions, indexing, joins, and consistency**.
+To keep authentication credentials inaccessible to normal JavaScript APIs and reduce exposure to common client-side token theft scenarios.
+
+### Why image sanitization?
+
+Because uploaded files are untrusted input.
+
+A filename such as:
+
+```text
+profile.jpg
+```
+
+does not prove that the underlying file is a safe image.
+
+The server therefore validates and processes images before storing them.
+
+### Why storage abstraction?
+
+The MVP uses local storage, but business logic should not depend on a local filesystem.
+
+This keeps the migration path toward:
+
+```text
+Local Storage
+      ↓
+S3 / Cloudflare R2 / Object Storage
+```
+
+open without rewriting profile and post business logic.
 
 ---
 
-## Database Driver / ORM
+# 🧭 Future Improvements
 
-Recommended:
+The current project intentionally stops at an MVP-sized architecture.
 
-```text
-pg
-```
+Possible future improvements include:
 
-The first version should use PostgreSQL directly through the `pg` driver rather than hiding SQL completely behind an ORM.
+* S3 / Cloudflare R2 object storage
+* CDN-backed media delivery
+* Background media processing
+* Antivirus/malware scanning pipeline
+* Image moderation
+* Multiple optimized image variants
+* WebP/AVIF delivery
+* Video uploads
+* Private media access
+* Notifications infrastructure
+* Redis caching
+* Advanced feed ranking
+* Search indexing
+* WebSocket-based real-time updates
+* Observability and metrics
+* Automated CI/CD
+* Production deployment
 
-This gives the developer practical experience with:
-
-* SQL
-* JOINs
-* indexes
-* transactions
-* constraints
-* query planning
-* pagination
-* PostgreSQL-specific behavior
-
-If an ORM becomes necessary later, it can be introduced intentionally.
-
----
-
-## Backend Dependencies
-
-Recommended dependencies:
-
-```text
-express
-pg
-bcrypt
-jsonwebtoken
-cookie-parser
-cors
-helmet
-express-rate-limit
-zod
-dotenv
-pino
-pino-http
-```
-
-Development/testing:
-
-```text
-nodemon
-vitest
-supertest
-eslint
-prettier
-```
+These are intentionally kept outside the current scope so the core architecture remains understandable and maintainable.
 
 ---
 
-# 8. Authentication Architecture
+# 🎯 Project Scope
 
-Authentication should use a **cookie-based approach**.
+This project is intentionally a **mini social platform**, not a production-scale social network.
 
-The browser receives:
+The focus is on demonstrating practical understanding of:
 
-```text
-Set-Cookie: access_token=...
-```
-
-The cookie should be configured approximately as:
-
-```text
-httpOnly: true
-secure: true        # production
-sameSite: strict/lax
-```
-
-The JavaScript application should never access the authentication token directly.
-
----
-
-# 9. JWT Strategy
-
-JWT can be used for authentication.
-
-Recommended architecture:
-
-```text
-Access Token
-+
-Refresh Token
-```
-
-### Access token
-
-Short-lived:
-
-```text
-15 minutes
-```
-
-### Refresh token
-
-Longer-lived:
-
-```text
-7–30 days
-```
-
-Both should be handled through secure HTTP-only cookies.
-
-For a small assignment, a single short-lived JWT cookie is acceptable, but the architecture should leave room for refresh-token authentication.
-
----
-
-# 10. Authorization
-
-Authentication answers:
-
-> Who are you?
-
-Authorization answers:
-
-> Are you allowed to perform this operation?
-
-Example:
-
-```text
-User A creates Post A.
-
-User B:
-
-GET Post A          → allowed
-PUT Post A          → forbidden
-DELETE Post A       → forbidden
-```
-
-The backend must never rely on frontend checks for authorization.
-
----
-
-# 11. Architecture
-
-The backend should use a **modular layered architecture**.
-
-Recommended flow:
-
-```text
-Request
-   ↓
-Route
-   ↓
-Middleware
-   ↓
-Controller
-   ↓
-Service
-   ↓
-Repository
-   ↓
-PostgreSQL
-```
-
-### Responsibilities
-
-#### Route
-
-Defines API endpoints.
-
-#### Middleware
-
-Handles:
-
+* Full-stack development
+* REST API design
 * Authentication
 * Authorization
-* Validation
-* Rate limiting
-* Request context
-
-#### Controller
-
-Handles HTTP concerns:
-
-* Request
-* Response
-* Status code
-
-Controllers should remain thin.
-
-#### Service
-
-Contains business logic.
-
-Example:
-
-```text
-FollowUserService
-CreatePostService
-LikePostService
-```
-
-#### Repository
-
-Responsible for database operations.
-
-Example:
-
-```text
-UserRepository
-PostRepository
-CommentRepository
-FollowRepository
-```
-
-This prevents SQL from spreading throughout controllers.
+* PostgreSQL
+* Relational modeling
+* Transactions
+* Data consistency
+* Security
+* Image/file handling
+* Input validation
+* Modular architecture
+* Pagination
+* Testing
+* Docker
+* Maintainability
+* Future scalability
 
 ---
 
-# 12. Recommended Folder Structure
+# 📚 Documentation
 
-```text
-CodeAlpha_Social_Media_Platform/
-│
-├── README.md
-├── .gitignore
-├── .dockerignore
-├── .env.example
-├── docker-compose.yml
-│
-├── backend/
-│   │
-│   ├── Dockerfile
-│   ├── .dockerignore
-│   ├── package.json
-│   ├── package-lock.json
-│   │
-│   ├── src/
-│   │   ├── app.js
-│   │   ├── server.js
-│   │   │
-│   │   ├── config/
-│   │   │   ├── env.js
-│   │   │   ├── database.js
-│   │   │   └── logger.js
-│   │   │
-│   │   ├── routes/
-│   │   │   └── index.js
-│   │   │
-│   │   ├── middlewares/
-│   │   │   ├── auth.middleware.js
-│   │   │   ├── error.middleware.js
-│   │   │   ├── validation.middleware.js
-│   │   │   └── rate-limit.middleware.js
-│   │   │
-│   │   ├── common/
-│   │   │   ├── constants/
-│   │   │   ├── utils/
-│   │   │   ├── pagination/
-│   │   │   └── response/
-│   │   │
-│   │   ├── errors/
-│   │   │   ├── AppError.js
-│   │   │   ├── AuthError.js
-│   │   │   ├── ValidationError.js
-│   │   │   └── NotFoundError.js
-│   │   │
-│   │   ├── modules/
-│   │   │   │
-│   │   │   ├── auth/
-│   │   │   │   ├── auth.controller.js
-│   │   │   │   ├── auth.service.js
-│   │   │   │   ├── auth.repository.js
-│   │   │   │   ├── auth.validation.js
-│   │   │   │   ├── auth.routes.js
-│   │   │   │   └── auth.test.js
-│   │   │   │
-│   │   │   ├── users/
-│   │   │   │   ├── user.controller.js
-│   │   │   │   ├── user.service.js
-│   │   │   │   ├── user.repository.js
-│   │   │   │   ├── user.validation.js
-│   │   │   │   ├── user.routes.js
-│   │   │   │   └── user.test.js
-│   │   │   │
-│   │   │   ├── posts/
-│   │   │   │   ├── post.controller.js
-│   │   │   │   ├── post.service.js
-│   │   │   │   ├── post.repository.js
-│   │   │   │   ├── post.validation.js
-│   │   │   │   ├── post.routes.js
-│   │   │   │   └── post.test.js
-│   │   │   │
-│   │   │   ├── comments/
-│   │   │   ├── likes/
-│   │   │   ├── follows/
-│   │   │   ├── feed/
-│   │   │   └── notifications/
-│   │   │
-│   │   └── database/
-│   │       ├── migrations/
-│   │       ├── seeds/
-│   │       └── queries/
-│   │
-│   └── tests/
-│       ├── integration/
-│       └── fixtures/
-│
-└── frontend/
-    │
-    ├── Dockerfile
-    ├── .dockerignore
-    ├── nginx.conf
-    ├── index.html
-    ├── login.html
-    ├── register.html
-    ├── feed.html
-    ├── profile.html
-    ├── post.html
-    │
-    ├── assets/
-    │   ├── images/
-    │   └── icons/
-    │
-    ├── css/
-    │   ├── reset.css
-    │   ├── variables.css
-    │   ├── global.css
-    │   ├── components.css
-    │   └── pages/
-    │
-    └── js/
-        ├── api/
-        │   ├── client.js
-        │   ├── auth.api.js
-        │   ├── users.api.js
-        │   ├── posts.api.js
-        │   ├── comments.api.js
-        │   ├── likes.api.js
-        │   └── follows.api.js
-        │
-        ├── components/
-        │   ├── Navbar.js
-        │   ├── PostCard.js
-        │   ├── Comment.js
-        │   ├── UserCard.js
-        │   └── Modal.js
-        │
-        ├── pages/
-        │   ├── login.js
-        │   ├── register.js
-        │   ├── feed.js
-        │   └── profile.js
-        │
-        ├── state/
-        │   └── auth.js
-        │
-        └── utils/
-            ├── dom.js
-            ├── format.js
-            └── validation.js
-```
+Additional technical documentation:
+
+* `backend/docs/IMAGEPLAN.md` — image/media architecture and implementation plan
+
+The repository also contains the project's migrations, configuration examples, tests, and Docker configuration.
 
 ---
 
-# 13. Database Design
+# 👨‍💻 Author
 
-Core tables:
+**Showrav Kormokar**
 
-```text
-users
-profiles
-posts
-comments
-post_likes
-user_follows
-notifications
-```
+Computer Science & Engineering
 
----
+Interested in:
 
-## users
-
-```text
-id
-email
-username
-password_hash
-created_at
-updated_at
-```
-
-Constraints:
-
-```text
-UNIQUE(email)
-UNIQUE(username)
-```
+* Software Engineering
+* Backend Engineering
+* Distributed Systems
+* System Design
+* Database Architecture
+* Security
+* AI-powered applications
 
 ---
 
-## profiles
-
-```text
-user_id
-display_name
-bio
-avatar_url
-cover_url
-website
-location
-updated_at
-```
-
-Relationship:
-
-```text
-profiles.user_id → users.id
-```
-
----
-
-## posts
-
-```text
-id
-user_id
-content
-image_url
-created_at
-updated_at
-deleted_at
-```
-
----
-
-## comments
-
-```text
-id
-post_id
-user_id
-content
-created_at
-updated_at
-deleted_at
-```
-
----
-
-## post_likes
-
-```text
-user_id
-post_id
-created_at
-```
-
-Constraint:
-
-```text
-UNIQUE(user_id, post_id)
-```
-
----
-
-## user_follows
-
-```text
-follower_id
-following_id
-created_at
-```
-
-Constraint:
-
-```text
-UNIQUE(follower_id, following_id)
-```
-
-Application rule:
-
-```text
-follower_id != following_id
-```
-
----
-
-# 14. Database Indexing
-
-Indexes should be designed according to actual query patterns.
-
-Examples:
-
-```sql
-CREATE INDEX idx_posts_user_created
-ON posts(user_id, created_at DESC);
-```
-
-```sql
-CREATE INDEX idx_comments_post_created
-ON comments(post_id, created_at DESC);
-```
-
-```sql
-CREATE INDEX idx_follows_follower
-ON user_follows(follower_id);
-```
-
-```sql
-CREATE INDEX idx_follows_following
-ON user_follows(following_id);
-```
-
-Unique indexes should be created automatically through:
-
-```text
-UNIQUE constraints
-```
-
----
-
-# 15. Transactions
-
-Transactions are required when multiple database operations must remain consistent.
-
-Example:
-
-```text
-Create post
-    ↓
-Create notification/event
-```
-
-If both operations belong to one atomic business operation:
-
-```text
-BEGIN
-
-INSERT post
-
-INSERT related record
-
-COMMIT
-```
-
-If anything fails:
-
-```text
-ROLLBACK
-```
-
----
-
-## Example: Follow
-
-Potential transaction:
-
-```text
-BEGIN
-
-Check user exists
-
-Create follow relationship
-
-Create notification
-
-COMMIT
-```
-
-Failure:
-
-```text
-ROLLBACK
-```
-
----
-
-## Example: Like
-
-```text
-BEGIN
-
-Insert like
-
-Update cached like count
-
-Create notification
-
-COMMIT
-```
-
-The exact implementation may evolve depending on whether counters are calculated dynamically or denormalized.
-
----
-
-# 16. Connection Pooling
-
-The backend should use PostgreSQL connection pooling.
-
-Example concept:
-
-```text
-Application
-     │
-     ├── Request 1 ──┐
-     ├── Request 2 ──┤
-     ├── Request 3 ──┤
-     └── Request 4 ──┘
-                    ↓
-             PostgreSQL Pool
-                    ↓
-              PostgreSQL
-```
-
-Do not create a new database connection for every request.
-
-Use a shared pool:
-
-```text
-pg.Pool
-```
-
-Transactions must acquire and release a dedicated client correctly.
-
----
-
-# 17. Configuration
-
-Environment variables should be used for configuration.
-
-Example:
-
-```env
-NODE_ENV=development
-
-PORT=5000
-
-DATABASE_URL=postgresql://user:password@localhost:5432/social_media
-
-JWT_ACCESS_SECRET=change-me
-JWT_ACCESS_EXPIRES_IN=15m
-
-COOKIE_NAME=access_token
-
-CORS_ORIGIN=http://localhost:5500
-```
-
-Never commit:
-
-```text
-.env
-```
-
-Commit:
-
-```text
-.env.example
-```
-
----
-
-# 18. Database Migrations
-
-Database schema changes must be tracked through migrations.
-
-Example:
-
-```text
-001_create_users.sql
-002_create_profiles.sql
-003_create_posts.sql
-004_create_comments.sql
-005_create_post_likes.sql
-006_create_user_follows.sql
-007_create_notifications.sql
-```
-
-Never rely on manually modifying a production database.
-
-Migration history should be reproducible.
-
----
-
-# 19. Seed Data
-
-A seed system should create realistic development data.
-
-Example:
-
-```text
-10 users
-30 posts
-80 comments
-100 likes
-20 follow relationships
-```
-
-Seed users can include:
-
-```text
-admin@example.com
-alice@example.com
-bob@example.com
-```
-
-Seed scripts should be:
-
-```text
-idempotent where practical
-```
-
-Meaning running them repeatedly should not unnecessarily create duplicate records.
-
----
-
-# 20. API Design
-
-Base URL:
-
-```text
-/api/v1
-```
-
-Example:
-
-```text
-GET /api/v1/users/:id
-```
-
-The API should use standard HTTP semantics.
-
-### Status codes
-
-```text
-200 OK
-201 Created
-204 No Content
-400 Bad Request
-401 Unauthorized
-403 Forbidden
-404 Not Found
-409 Conflict
-422 Unprocessable Entity
-429 Too Many Requests
-500 Internal Server Error
-```
-
----
-
-# 21. Standard API Response
-
-Success:
-
-```json
-{
-  "success": true,
-  "data": {},
-  "message": "Request successful"
-}
-```
-
-Error:
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "POST_NOT_FOUND",
-    "message": "Post not found"
-  }
-}
-```
-
-Paginated response:
-
-```json
-{
-  "success": true,
-  "data": [],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 100
-  }
-}
-```
-
----
-
-# 22. API Endpoints
-
-## Authentication
-
-| Method | Endpoint                | Description            | Auth        |
-| ------ | ----------------------- | ---------------------- | ----------- |
-| POST   | `/api/v1/auth/register` | Register user          | No          |
-| POST   | `/api/v1/auth/login`    | Login                  | No          |
-| POST   | `/api/v1/auth/logout`   | Logout                 | Yes         |
-| GET    | `/api/v1/auth/me`       | Current user           | Yes         |
-| POST   | `/api/v1/auth/refresh`  | Refresh authentication | Yes/Refresh |
-
----
-
-## Users
-
-| Method | Endpoint                      | Description     | Auth     |
-| ------ | ----------------------------- | --------------- | -------- |
-| GET    | `/api/v1/users/:id`           | Get profile     | Optional |
-| PATCH  | `/api/v1/users/me`            | Update profile  | Yes      |
-| PATCH  | `/api/v1/users/me/password`   | Change password | Yes      |
-| GET    | `/api/v1/users/search?q=`     | Search users    | Optional |
-| GET    | `/api/v1/users/:id/posts`     | User posts      | Optional |
-| GET    | `/api/v1/users/:id/followers` | Followers       | Optional |
-| GET    | `/api/v1/users/:id/following` | Following       | Optional |
-
----
-
-## Posts
-
-| Method | Endpoint                     | Description     | Auth     |
-| ------ | ---------------------------- | --------------- | -------- |
-| POST   | `/api/v1/posts`              | Create post     | Yes      |
-| GET    | `/api/v1/posts`              | List posts      | Optional |
-| GET    | `/api/v1/posts/:id`          | Get post        | Optional |
-| PATCH  | `/api/v1/posts/:id`          | Update own post | Yes      |
-| DELETE | `/api/v1/posts/:id`          | Delete own post | Yes      |
-| GET    | `/api/v1/posts/:id/comments` | Get comments    | Optional |
-
----
-
-## Comments
-
-| Method | Endpoint                     | Description        | Auth |
-| ------ | ---------------------------- | ------------------ | ---- |
-| POST   | `/api/v1/posts/:id/comments` | Create comment     | Yes  |
-| PATCH  | `/api/v1/comments/:id`       | Update own comment | Yes  |
-| DELETE | `/api/v1/comments/:id`       | Delete own comment | Yes  |
-
----
-
-## Likes
-
-| Method | Endpoint                  | Description    | Auth     |
-| ------ | ------------------------- | -------------- | -------- |
-| POST   | `/api/v1/posts/:id/like`  | Like post      | Yes      |
-| DELETE | `/api/v1/posts/:id/like`  | Unlike post    | Yes      |
-| GET    | `/api/v1/posts/:id/likes` | Get post likes | Optional |
-
----
-
-## Follows
-
-| Method | Endpoint                      | Description   | Auth     |
-| ------ | ----------------------------- | ------------- | -------- |
-| POST   | `/api/v1/users/:id/follow`    | Follow user   | Yes      |
-| DELETE | `/api/v1/users/:id/follow`    | Unfollow user | Yes      |
-| GET    | `/api/v1/users/:id/followers` | Get followers | Optional |
-| GET    | `/api/v1/users/:id/following` | Get following | Optional |
-
----
-
-## Feed
-
-| Method | Endpoint       | Description       | Auth |
-| ------ | -------------- | ----------------- | ---- |
-| GET    | `/api/v1/feed` | Personalized feed | Yes  |
-
----
-
-## Notifications
-
-| Method | Endpoint                         | Description       | Auth |
-| ------ | -------------------------------- | ----------------- | ---- |
-| GET    | `/api/v1/notifications`          | Get notifications | Yes  |
-| PATCH  | `/api/v1/notifications/:id/read` | Mark as read      | Yes  |
-| PATCH  | `/api/v1/notifications/read-all` | Mark all as read  | Yes  |
-
----
-
-# 23. Pagination
-
-List endpoints must not return unlimited records.
-
-Bad:
-
-```text
-GET /posts
-```
-
-returning every post.
-
-Instead:
-
-```text
-GET /api/v1/posts?page=1&limit=20
-```
-
-For more scalable feeds, cursor-based pagination can eventually be introduced:
-
-```text
-GET /api/v1/feed?limit=20&cursor=abc123
-```
-
-Cursor pagination is preferable for large, frequently changing feeds.
-
----
-
-# 24. Validation
-
-All external input must be validated on the backend.
-
-Example registration:
-
-```text
-email
-username
-password
-displayName
-```
-
-Validation library:
-
-```text
-Zod
-```
-
-Validation should happen before business logic.
-
-Example:
-
-```text
-Request
- ↓
-Schema Validation
- ↓
-Controller
- ↓
-Service
-```
-
-Never trust frontend validation alone.
-
----
-
-# 25. Error Handling
-
-All errors should eventually reach one centralized error middleware.
-
-Example:
-
-```text
-throw new NotFoundError("Post not found");
-```
-
-Central middleware converts it into:
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "POST_NOT_FOUND",
-    "message": "Post not found"
-  }
-}
-```
-
-Do not expose:
-
-```text
-database stack traces
-SQL queries
-internal secrets
-```
-
-in production responses.
-
----
-
-# 26. Security
-
-The backend should include:
-
-### Helmet
-
-Security-related HTTP headers.
-
-### CORS
-
-Only allow configured frontend origins.
-
-### Rate limiting
-
-Especially:
-
-```text
-/login
-/register
-/password
-```
-
-### Password hashing
-
-Use:
-
-```text
-bcrypt
-```
-
-### Cookie security
-
-Use:
-
-```text
-httpOnly
-secure
-sameSite
-```
-
-### SQL injection protection
-
-Use parameterized queries:
-
-```sql
-WHERE id = $1
-```
-
-Never construct SQL using string concatenation.
-
----
-
-# 27. Soft Delete
-
-Posts and comments can use:
-
-```text
-deleted_at
-```
-
-instead of immediately removing the database record.
-
-Example:
-
-```text
-deleted_at = NULL
-```
-
-means active.
-
-```text
-deleted_at != NULL
-```
-
-means deleted.
-
-This makes future moderation, auditing, and recovery easier.
-
----
-
-# 28. API Versioning
-
-The API starts with:
-
-```text
-/api/v1
-```
-
-Future breaking changes can use:
-
-```text
-/api/v2
-```
-
-Example:
-
-```text
-/api/v1/users
-/api/v2/users
-```
-
-This prevents breaking existing clients immediately when API contracts change.
-
----
-
-# 29. Testing Strategy
-
-Testing should exist at multiple levels.
-
-## Unit tests
-
-Test:
-
-```text
-Services
-Utilities
-Validation
-Business rules
-```
-
-Example:
-
-```text
-should reject following yourself
-should prevent duplicate likes
-should reject duplicate username
-```
-
-## Integration tests
-
-Test:
-
-```text
-Service + PostgreSQL
-Repository + PostgreSQL
-Transactions
-```
-
-## API tests
-
-Use:
-
-```text
-Supertest
-```
-
-Test:
-
-```text
-POST /auth/register
-POST /auth/login
-POST /posts
-POST /posts/:id/like
-POST /users/:id/follow
-```
-
----
-
-# 30. Logging
-
-Use structured logging.
-
-Recommended:
-
-```text
-Pino
-```
-
-Development:
-
-```text
-Readable logs
-```
-
-Production:
-
-```text
-JSON structured logs
-```
-
-Useful information:
-
-```text
-request ID
-method
-path
-status
-duration
-user ID
-error code
-```
-
-Never log:
-
-```text
-password
-JWT secrets
-authentication tokens
-```
-
----
-
-# 31. Request ID / Correlation ID
-
-Each request should have a unique ID.
-
-Example:
-
-```text
-X-Request-ID: 4b7f...
-```
-
-This becomes useful when debugging:
-
-```text
-Frontend request
-      ↓
-Backend log
-      ↓
-Database error
-```
-
-The same request ID helps connect these events.
-
----
-
-# 32. Graceful Shutdown
-
-The server should handle:
-
-```text
-SIGTERM
-SIGINT
-```
-
-Shutdown sequence:
-
-```text
-Stop accepting new requests
-        ↓
-Finish active requests
-        ↓
-Close PostgreSQL pool
-        ↓
-Close server
-        ↓
-Exit
-```
-
-This becomes important when deploying with Docker, containers, or orchestration platforms.
-
----
-
-# 33. Frontend Architecture
-
-Although the frontend uses vanilla JavaScript, it should still have structure.
-
-Recommended separation:
-
-```text
-API layer
-   ↓
-State
-   ↓
-Page logic
-   ↓
-Components
-   ↓
-DOM
-```
-
-Example:
-
-```text
-posts.api.js
-     ↓
-feed.js
-     ↓
-PostCard.js
-     ↓
-DOM
-```
-
-Avoid putting:
-
-```text
-fetch()
-DOM manipulation
-business logic
-authentication logic
-```
-
-all inside one huge JavaScript file.
-
----
-
-# 34. Frontend API Client
-
-Instead of repeatedly writing:
-
-```javascript
-fetch(...)
-```
-
-create a centralized API client.
-
-Example responsibilities:
-
-```text
-base URL
-credentials
-headers
-JSON parsing
-error handling
-```
-
-Authentication cookies are automatically included using:
-
-```javascript
-credentials: "include"
-```
-
----
-
-# 35. API Security Boundary
-
-The frontend is considered **untrusted**.
-
-Never assume:
-
-```text
-button hidden = authorization
-```
-
-For example, hiding a delete button does not prevent:
-
-```text
-DELETE /api/v1/posts/123
-```
-
-The backend must independently verify ownership.
-
----
-
-# 36. Scalability Strategy
-
-The first implementation is a **modular monolith**.
-
-Do not start with microservices.
-
-Architecture:
-
-```text
-                 ┌───────────────┐
-                 │   Frontend    │
-                 └───────┬───────┘
-                         │
-                         ▼
-                 ┌───────────────┐
-                 │ Express API   │
-                 └───────┬───────┘
-                         │
-        ┌────────────────┼────────────────┐
-        ▼                ▼                ▼
-     Auth            Social            Content
-     Module          Modules           Modules
-        │                │                │
-        └────────────────┼────────────────┘
-                         ▼
-                   PostgreSQL
-```
-
-This provides modularity without introducing unnecessary distributed-system complexity.
-
----
-
-# 37. Future Scaling Path
-
-If the platform grows significantly, components could eventually be separated:
-
-```text
-API Gateway
-    │
-    ├── Auth Service
-    ├── User Service
-    ├── Post Service
-    ├── Social Graph Service
-    ├── Notification Service
-    └── Feed Service
-```
-
-Additional infrastructure could eventually include:
-
-```text
-Redis
-Message Queue
-Object Storage
-CDN
-Search Engine
-Read Replicas
-Background Workers
-```
-
-But these should only be introduced when justified by actual requirements.
-
----
-
-# 38. Caching
-
-Redis is not required for the initial version.
-
-Potential future cache targets:
-
-```text
-User profiles
-Popular posts
-Feed results
-Session/token data
-Rate-limit counters
-```
-
-Avoid caching everything prematurely.
-
----
-
-# 39. Media Storage
-
-Images should not be stored directly in PostgreSQL.
-
-Future architecture:
-
-```text
-Frontend
-   ↓
-Backend
-   ↓
-Object Storage
-   ↓
-Image URL
-   ↓
+# 🏁 Final Status
+
+**CodeAlpha Full Stack Software Development Internship — Task 02**
+
+The project started as a simple social-media assignment and was developed into a structured full-stack application with a stronger focus on real-world engineering practices.
+
+The final implementation includes:
+
+```text
+Authentication
+      +
+Profiles
+      +
+Posts
+      +
+Comments
+      +
+Likes
+      +
+Follow System
+      +
+Search
+      +
+Personalized Feed
+      +
+Pagination
+      +
+Secure Image Upload
+      +
+Image Validation & Sanitization
+      +
+Media Storage Abstraction
+      +
 PostgreSQL
+      +
+Docker
+      +
+Testing
+      +
+Security & Data Consistency
 ```
 
-Potential providers:
+> **Built as an internship project, designed with engineering principles that can support future evolution.**
 
-```text
-Cloudinary
-AWS S3
-Cloudflare R2
 ```
-
-The initial version can simply use image URLs.
-
----
-
-# 40. Feed Architecture
-
-Initial implementation:
-
-```text
-SELECT posts
-FROM posts
-JOIN user_follows
-...
-ORDER BY created_at DESC
-LIMIT 20;
-```
-
-This is a straightforward **fan-out-on-read** approach.
-
-For very large systems, alternative approaches include:
-
-```text
-Fan-out-on-write
-Fan-out-on-read
-Hybrid feed generation
-```
-
-The project should start with fan-out-on-read because it is simpler and appropriate for a mini social platform.
-
----
-
-# 41. Data Consistency
-
-Important invariants:
-
-```text
-Email must be unique.
-Username must be unique.
-A user cannot follow themselves.
-A user cannot follow another user twice.
-A user cannot like a post twice.
-A comment must belong to an existing post.
-A comment must belong to an existing user.
-A post must belong to an existing user.
-```
-
-These rules should be enforced at multiple levels where appropriate:
-
-```text
-Frontend
-Backend validation
-Business logic
-Database constraints
-```
-
-The database remains the final integrity boundary.
-
----
-
-# 42. API Idempotency
-
-Operations such as:
-
-```text
-DELETE /posts/:id/like
-DELETE /users/:id/follow
-```
-
-should be designed so repeated requests do not produce invalid state.
-
-For example:
-
-```text
-Unlike already-unliked post
-```
-
-should not corrupt data.
-
-Database constraints and appropriate service logic should protect against duplicate state.
-
----
-
-# 43. Repository Pattern
-
-Repositories should encapsulate database access.
-
-Example:
-
-```text
-PostRepository
-├── create()
-├── findById()
-├── findMany()
-├── update()
-├── delete()
-└── exists()
-```
-
-The service should not need to know SQL implementation details.
-
-Example:
-
-```text
-PostController
-      ↓
-PostService
-      ↓
-PostRepository
-      ↓
-PostgreSQL
-```
-
----
-
-# 44. Service Layer
-
-Services contain business rules.
-
-Example:
-
-```text
-LikePostService
-```
-
-Responsibilities:
-
-```text
-Validate post exists
-Check whether user already liked it
-Create like
-Create notification
-Return result
-```
-
-Controllers should not contain these rules.
-
----
-
-# 45. Repository Transactions
-
-Transactions should be owned by the business operation.
-
-For example:
-
-```text
-FollowService
-```
-
-may execute:
-
-```text
-BEGIN
-    createFollow()
-    createNotification()
-COMMIT
-```
-
-The repository provides the database operations while the service determines the transactional boundary.
-
----
-
-# 46. Documentation
-
-The project should document:
-
-```text
-README.md
-API documentation
-Database schema
-Architecture
-Environment variables
-Setup instructions
-Testing instructions
-Deployment instructions
-```
-
-Optional:
-
-```text
-OpenAPI specification
-```
-
-Recommended endpoint documentation:
-
-```text
-/api/v1/...
-```
-
-with:
-
-```text
-request
-response
-authentication
-status codes
-errors
-```
-
----
-
-# 47. Project Principles
-
-The project follows these principles:
-
-### 1. Keep the backend authoritative
-
-Never trust frontend authorization.
-
-### 2. Keep controllers thin
-
-Business logic belongs in services.
-
-### 3. Keep database access isolated
-
-SQL belongs in repositories.
-
-### 4. Prefer database constraints
-
-Do not rely exclusively on application-level checks.
-
-### 5. Use transactions intentionally
-
-Transactions are for maintaining business invariants, not for wrapping every query unnecessarily.
-
-### 6. Index based on access patterns
-
-Do not blindly index every column.
-
-### 7. Paginate every potentially large collection
-
-Never return unlimited data.
-
-### 8. Start simple, design for evolution
-
-Do not introduce microservices, Redis, queues, or distributed systems before they are necessary.
-
-### 9. Security is a backend responsibility
-
-Frontend validation is only a user-experience feature.
-
-### 10. Optimize based on evidence
-
-Measure first, then optimize.
-
----
-
-# 48. Final Architecture
-
-The resulting application should follow this conceptual architecture:
-
-```text
-┌───────────────────────────────────────────────┐
-│                   FRONTEND                    │
-│                                               │
-│ HTML + CSS + JavaScript                       │
-│ Components + Pages + API Client               │
-└───────────────────────┬───────────────────────┘
-                        │
-                     REST API
-                        │
-                        ▼
-┌───────────────────────────────────────────────┐
-│                 EXPRESS API                   │
-│                                               │
-│ Routes                                        │
-│   ↓                                           │
-│ Middleware                                    │
-│   ↓                                           │
-│ Controllers                                   │
-│   ↓                                           │
-│ Services                                      │
-│   ↓                                           │
-│ Repositories                                  │
-└───────────────────────┬───────────────────────┘
-                        │
-                        ▼
-┌───────────────────────────────────────────────┐
-│                  POSTGRESQL                   │
-│                                               │
-│ Users                                         │
-│ Profiles                                      │
-│ Posts                                         │
-│ Comments                                      │
-│ Likes                                         │
-│ Follows                                       │
-│ Notifications                                 │
-│                                               │
-│ Constraints + Indexes + Transactions          │
-└───────────────────────────────────────────────┘
-```
-
----
-
-# 49. Project Goal
-
-This project should not merely demonstrate:
-
-> "I can build CRUD APIs."
-
-It should demonstrate:
-
-> **"I understand how to design a maintainable backend and full-stack application with clear boundaries, data integrity, security, and a path toward future scale."**
-
-The first version remains intentionally small enough to complete, while the architecture provides room for future capabilities such as Redis caching, background workers, object storage, real-time notifications, search, moderation, and eventually distributed services.
-
----
-
-## License
-
-This project is developed for Full Stack Software Development internship at CodeAlpha.  
-Design and build by **Showrav Kormokar**
