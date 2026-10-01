@@ -8,7 +8,8 @@ The original assignment focuses on users, profiles, posts, comments, likes, and 
 
 > The goal is not to claim production-scale infrastructure. The goal is to demonstrate how a small application can be designed with principles that make future scaling easier.
 ---
-![Uploading showrav_kormokar_social_midia_platform.png…]()
+<img width="1672" height="941" alt="showrav_kormokar_social_midia_platform" src="https://github.com/user-attachments/assets/dd21efce-83e0-47af-a599-de58c7d34cb8" />  
+
 ---
 
 ## ✨ Features
