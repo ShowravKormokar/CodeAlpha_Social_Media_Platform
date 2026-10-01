@@ -7,7 +7,8 @@ This project was developed as **Task 02 of the CodeAlpha Full Stack Software Dev
 The original assignment focuses on users, profiles, posts, comments, likes, and follows. Instead of implementing only the minimum requirements, this project was developed with a stronger engineering mindset around **security, maintainability, data consistency, modular architecture, validation, pagination, transactions, and scalable design**.
 
 > The goal is not to claim production-scale infrastructure. The goal is to demonstrate how a small application can be designed with principles that make future scaling easier.
-
+---
+![Uploading showrav_kormokar_social_midia_platform.png…]()
 ---
 
 ## ✨ Features
